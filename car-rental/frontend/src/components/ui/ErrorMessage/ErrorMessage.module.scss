@@ -1,0 +1,33 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.errorContainer {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-md;
+  background-color: lighten($danger-color, 35%);
+  border: 1px solid $danger-color;
+  border-radius: $border-radius-sm;
+  margin: $spacing-md 0;
+}
+
+.errorMessage {
+  color: $danger-color;
+  font-size: $font-size-base;
+  margin-bottom: $spacing-sm;
+  text-align: center;
+}
+
+.retryButton {
+  padding: $spacing-xs $spacing-sm;
+  background-color: $danger-color;
+  color: $light-color;
+  border: none;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  transition: $transition-base;
+
+  &:hover {
+    background-color: darken($danger-color, 10%);
+  }
+} 

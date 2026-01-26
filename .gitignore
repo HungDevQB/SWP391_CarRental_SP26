@@ -1,0 +1,5 @@
+car-rental/logs/*.log
+/car-rental/backup/
+/car-rental/logs/*.log
+/car-rental/logs/*.gz
+/car-rental/backup/

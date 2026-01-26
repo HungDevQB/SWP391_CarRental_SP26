@@ -1,0 +1,151 @@
+.reportsContainer {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-left: 250px; /* Offset for sidebar width */
+  width: calc(100% - 250px); /* Adjust width to fit remaining space */
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.reportCard {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.cardValue {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #4682b4;
+}
+
+// Styles cho phần xe phổ biến chi tiết
+.popularCarDetail {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.carImage {
+  flex-shrink: 0;
+  width: 120px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.carInfo {
+  flex: 1;
+  min-width: 0; // Để text không bị tràn
+}
+
+.carModel {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.carBrand {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 0.25rem 0;
+}
+
+.carPlate {
+  font-size: 0.9rem;
+  color: #4682b4;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.supplierName,
+.bookingCount,
+.carRevenue {
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+  color: #555;
+  
+  strong {
+    color: #333;
+  }
+}
+
+.chartContainer {
+  height: 200px;
+  position: relative; /* Ensure charts are contained */
+  width: 100%;
+}
+
+.suppliersSection {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.suppliersChart {
+  height: 300px;
+  position: relative; /* Ensure bar chart is contained */
+  width: 100%;
+}
+
+.loading {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
+  padding: 2rem;
+}
+
+.error {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #d32f2f;
+  padding: 2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .reportsContainer {
+    margin-left: 0; /* Remove offset if sidebar is hidden */
+    width: 100%;
+  }
+}

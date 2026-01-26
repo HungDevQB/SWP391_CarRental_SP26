@@ -1,0 +1,138 @@
+Admin#
+Username: NguyenVanHung, Password: Hung@1234
+Username: TranThiMai, Password: Mai#56789
+Username: PhamQuocAnh, Password: Anh$90123
+Username: LeHongNgoc, Password: Ngoc%4567
+Username: HoangMinhTuan, Password: Tuan&8901
+Supplier#
+Username: NguyenThiLan, Password: Lan@34567
+Username: TranVanNam, Password: Nam#78901
+Username: PhamThiHoa, Password: Hoa$12345
+Username: LeMinhDuc, Password: Duc%56789
+Username: HoangThiThuy, Password: Thuy&9012
+Username: NguyenVanBao, Password: Bao@34567
+Username: TranThiHuong, Password: Huong#7890
+Username: PhamVanLong, Password: Long$12345
+Username: LeThiThu, Password: Thu%56789
+Username: HoangVanPhuc, Password: Phuc&9012
+Username: NguyenThiNgoc, Password: Ngoc@3456
+Username: TranVanKhoa, Password: Khoa#7890
+Username: PhamThiYen, Password: Yen$12345
+Username: LeVanTam, Password: Tam%56789
+Username: HoangThiLinh, Password: Linh&9012
+Username: NguyenVanDung, Password: Dung@3456
+Username: TranThiHa, Password: Ha#78901
+Username: PhamVanHau, Password: Hau$12345
+Username: LeThiHong, Password: Hong%5678
+Username: HoangVanTai, Password: Tai&90123
+Username: NguyenThiMai1, Password: Mai@34567
+Username: TranVanBinh, Password: Binh#7890
+Username: PhamThiDung, Password: Dung$1234
+Username: LeVanSon1, Password: Son%56789
+Username: HoangThiAnh, Password: Anh&90123
+Username: NguyenVanTuan, Password: Tuan@3456
+Username: TranThiLoan, Password: Loan#7890
+Username: PhamVanKien, Password: Kien$1234
+Username: LeThiHanh, Password: Hanh@5678
+Username: NguyenThiBang, Password: Bang@12345
+Username: TranVanChuong, Password: Chuong#678
+Username: PhamThiDiem, Password: Diem$90123
+Username: LeVanHoang, Password: Hoang%4567
+Username: HoangThiKim, Password: Kim&89012
+Username: NguyenVanLoi, Password: Loi@34567
+Username: TranThiMy, Password: My#78901
+Username: PhamVanNghia, Password: Nghia@1234
+Username: LeThiPhuong, Password: Phuong%567
+Username: HoangVanQuoc, Password: Quoc&9012
+Username: NguyenThiAnh1, Password: Anh@123456
+Username: TranVanBac, Password: Bac#789012
+Username: PhamThiCuc, Password: Cuc$34567
+Username: LeVanDat, Password: Dat%90123
+Username: HoangThiGiang, Password: Giang&4567
+Username: NguyenVanHao, Password: Hao@89012
+Username: TranThiHien, Password: Hien#34567
+Username: PhamVanKhoa1, Password: Khoa$90123
+Username: LeThiLien, Password: Lien%45678
+Username: HoangVanMinh, Password: Minh&12345
+Username: NguyenThiNga, Password: Nga@67890
+Username: TranVanPhat, Password: Phat#23456
+Username: PhamThiQuyen, Password: Quyen$7890
+Username: LeVanSon2, Password: Son%34567
+Username: HoangThiThuy1, Password: Thuy&90123
+Customer#
+Username: NguyenVanAn, Password: An@123456
+Username: TranThiBich, Password: Bich#7890
+Username: PhamVanCuong, Password: Cuong$123
+Username: LeThiDuyen, Password: Duyen%567
+Username: HoangVanGiang, Password: Giang&901
+Username: NguyenThiHien, Password: Hien@3456
+Username: TranVanHoa, Password: Hoa#78901
+Username: PhamThiKim, Password: Kim$12345
+Username: LeVanLoc, Password: Loc%56789
+Username: HoangThiMinh, Password: Minh&9012
+Username: NguyenVanNguyen, Password: Nguyen@34
+Username: TranThiOanh, Password: Oanh#7890
+Username: PhamVanPhat1, Password: Phat$1234
+Username: LeThiQuyen, Password: Quyen%567
+Username: HoangVanSang, Password: Sang&9012
+Username: NguyenThiThanh, Password: Thanh@345
+Username: TranVanThang, Password: Thang#789
+Username: PhamThiUyen, Password: Uyen$1234
+Username: LeVanViet, Password: Viet%5678
+Username: HoangThiXuan, Password: Xuan&9012
+Username: NguyenVanDuong, Password: Duong@345
+Username: TranThiHang, Password: Hang#7890
+Username: PhamVanKhanh, Password: Khanh$123
+Username: LeThiLe, Password: Le%56789
+Username: HoangVanManh, Password: Manh&9012
+Username: NguyenThiNhung, Password: Nhung@345
+Username: TranVanPhu, Password: Phu#78901
+Username: PhamThiQuynh, Password: Quynh$123
+Username: LeVanSy, Password: Sy%56789
+Username: HoangThiThao, Password: Thao&9012
+Username: NguyenVanThinh, Password: Thinh@345
+Username: TranThiTram, Password: Tram#7890
+Username: PhamVanTrung, Password: Trung$123
+Username: LeThiVan, Password: Van%56789
+Username: HoangVanVy, Password: Vy&90123
+Username: NguyenThiYen1, Password: Yen@34567
+Username: TranVanAnh, Password: Anh#78901
+Username: PhamThiBinh, Password: Binh$1234
+Username: LeVanCanh, Password: Canh%5678
+Username: HoangThiDao, Password: Dao&90123
+Username: NguyenVanDong, Password: Dong@3456
+Username: TranThiGam, Password: Gam#78901
+Username: PhamVanHieu, Password: Hieu$1234
+Username: LeThiHuyen, Password: Huyen%567
+Username: HoangVanKhang, Password: Khang&901
+Username: NguyenThiLam, Password: Lam@777
+Username: TranVanLap, Password: Lap#777
+Username: PhamThiMy1, Password: My$777
+Username: LeVanNghia, Password: Nghia%56789
+Username: HoangThiNhi, Password: Nhi&90123
+Username: NguyenVanPhong, Password: Phong@345
+Username: TranThiPhuong1, Password: Phuong#78
+Username: PhamVanQuang, Password: Quang$123
+Username: LeThiRang, Password: Rang%5678
+Username: HoangVanSinh, Password: Sinh&9012
+Username: NguyenThiSuong, Password: Suong@345
+Username: TranVanTai1, Password: Tai#78901
+Username: PhamThiTham, Password: Tham$1234
+Username: LeVanThien, Password: Thien%567
+Username: HoangThiThuan, Password: Thuan&901
+Username: NguyenVanTien, Password: Tien@3456
+Username: TranThiTrang, Password: Trang#789
+Username: PhamVanTruong, Password: Truong$12
+Username: LeThiVen, Password: Ven%56789
+Username: HoangVanVuong, Password: Vuong&901
+
+
+
+
+
+
+
+
+
+
+

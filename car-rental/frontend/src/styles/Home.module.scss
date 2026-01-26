@@ -1,0 +1,154 @@
+.container {
+  padding: 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+  }
+
+  .headerIcon {
+    margin-right: 10px;
+    color: #4682B4; // $primary-blue
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 20px;
+
+  &.twoCols {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  &.oneCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #333;
+
+    .cardIcon {
+      margin-right: 10px;
+      color: #4682B4; // $primary-blue
+    }
+  }
+
+  .value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+  }
+
+  .progressBar {
+    width: 100%;
+    height: 10px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+
+    .progress {
+      height: 100%;
+      width: 83%; // Giả lập 83% như mock data
+      background-color: #4CAF50;
+      border-radius: 5px;
+    }
+  }
+
+  &.highlight {
+    border-left: 4px solid #4CAF50;
+  }
+}
+
+.chartCard {
+  padding: 20px;
+}
+
+.activityList {
+  .activityItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background-color: #4682B4; // $primary-blue
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .time {
+      font-size: 14px;
+      color: #666;
+      margin-right: 10px;
+      min-width: 50px;
+    }
+
+    .action {
+      font-size: 14px;
+      color: #333;
+      margin: 0;
+    }
+  }
+}
+
+.popularCar {
+  display: flex;
+  align-items: center;
+
+  .carImage {
+    width: 100px;
+    height: 60px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin-right: 20px;
+  }
+
+  .carDetails {
+    .carName {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin: 0 0 5px 0;
+    }
+
+    .carInfo {
+      font-size: 14px;
+      color: #666;
+      margin: 0;
+    }
+  }
+}
+
+// Thêm style cho nội dung admin khi có sidebar
+.adminContent {
+  margin-left: 200px; // Độ rộng của sidebar
+  transition: margin-left 0.3s ease;
+  padding: 20px;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+  }
+}

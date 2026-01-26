@@ -1,0 +1,193 @@
+@use "_variables" as *;
+@use "_mixins" as *;
+
+.sidebar {
+  width: 200px; // Độ rộng cố định
+  height: 100vh;
+  background-color: $white;
+  box-shadow: $shadow-md;
+  position: fixed; // Cố định bên trái
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  animation: slideInLeft 0.5s ease;
+
+  &.open {
+    transform: translateX(0); // Hiển thị sidebar trên mobile
+  }
+
+  .header {
+    padding: 16px;
+    background: linear-gradient(90deg, $primary-blue 0%, $primary-light-blue 100%);
+    color: $white;
+    text-align: center;
+    position: relative;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+  }
+
+  .closeButton {
+    display: none; // Ẩn trên desktop
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: $white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: rotate(90deg);
+    }
+  }
+
+  .nav {
+    margin-top: 20px;
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      .navItem {
+        padding: 12px 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+
+        &.active {
+          background: linear-gradient(90deg, $primary-blue 0%, $primary-light-blue 100%);
+          .navLink {
+            color: $white;
+            font-weight: 600;
+          }
+          .navIcon {
+            transform: scale(1.2);
+          }
+        }
+
+        &:hover {
+          background: linear-gradient(90deg, $primary-light-blue 0%, $gray-50 100%);
+          transform: translateX(5px);
+
+          .navLink {
+            color: $primary-blue;
+          }
+
+          .navIcon {
+            transform: rotate(10deg) scale(1.2);
+          }
+        }
+
+        .navLink {
+          text-decoration: none;
+          color: $gray-dark;
+          font-size: 1rem;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: color 0.3s ease;
+
+          &:hover {
+            color: $primary-blue;
+          }
+        }
+
+        .navIcon {
+          font-size: 1.3rem;
+          transition: transform 0.3s ease;
+        }
+      }
+    }
+  }
+}
+
+.toggleButton {
+  display: none; // Ẩn trên desktop
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: $primary-blue;
+  color: $white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  z-index: 1100;
+  box-shadow: $shadow-sm;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: $primary-light-blue;
+    transform: scale(1.1);
+  }
+
+  &.hide {
+    display: none; // Ẩn khi sidebar mở
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+    transform: translateX(-100%); // Ẩn sidebar mặc định
+    &.open {
+      transform: translateX(0);
+    }
+
+    .header {
+      padding: 12px;
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .closeButton {
+        display: block; // Hiện nút đóng trên mobile
+        top: 12px;
+        right: 12px;
+      }
+    }
+
+    .nav {
+      margin-top: 16px;
+
+      .navItem {
+        padding: 10px 14px;
+
+        .navLink {
+          font-size: 0.95rem;
+        }
+
+        .navIcon {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  .toggleButton {
+    display: block; // Hiện nút toggle trên mobile
+  }
+}

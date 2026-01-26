@@ -1,0 +1,42 @@
+đây là 1 project nhóm cho thuê xe tự lái. tôi được giao phần về supelier và đây là yêu cầu :
+
+ID	Mô tả yêu cầu nghiệp vụ
+VE-01	Supplier có thể thêm xe mới vào hệ thống.
+VE-02	Khi thêm xe, hệ thống yêu cầu: tên xe, hãng, biển số, mô tả, giá thuê, ảnh, tình trạng.
+VE-03	Xe mới thêm mặc định ở trạng thái "có sẵn".
+VE-04	Supplier có thể chỉnh sửa thông tin xe đã đăng.
+VE-05	Supplier chỉ có thể sửa / xóa xe do chính họ đăng.
+VE-06	Supplier có thể tạm ẩn / xóa xe khỏi danh sách hiển thị (nếu xe đang bảo trì).
+VE-07	Hệ thống không cho phép xóa xe đang có đơn thuê chưa hoàn tất.
+
+📦 III. Nghiệp vụ quản lý đơn thuê xe
+ID	Mô tả yêu cầu nghiệp vụ
+BO-01	Supplier có thể xem danh sách đơn thuê đối với xe của mình.
+BO-02	Mỗi đơn thuê hiển thị: tên xe, tên khách, ngày thuê, trạng thái, tổng tiền.
+BO-03	Supplier có thể xác nhận đơn thuê trong trạng thái "chờ xác nhận".
+BO-04	Supplier có thể từ chối / huỷ đơn thuê trong trạng thái "chờ xác nhận".
+BO-05	Supplier có thể đánh dấu hoàn thành đơn sau khi khách trả xe.
+BO-06	Supplier không thể thao tác đơn thuê không liên quan tới xe của mình.
+BO-07	Đơn thuê có trạng thái: Chờ xác nhận, Đã xác nhận, Đang thuê, Đã trả, Đã huỷ.
+
+🧑‍💼 IV. Nghiệp vụ quản lý tài khoản Supplier
+ID	Mô tả yêu cầu nghiệp vụ
+AC-01	Supplier có thể xem thông tin tài khoản cá nhân.
+AC-02	Supplier có thể cập nhật tên, số điện thoại, ảnh đại diện (email là duy nhất).
+AC-03	Supplier có thể đổi mật khẩu sau khi nhập mật khẩu cũ.
+AC-04	Hệ thống hiển thị thông tin đúng theo người dùng đang đăng nhập.
+
+📊 V. Yêu cầu thống kê (dashboard)
+ID	Mô tả yêu cầu nghiệp vụ
+DA-01	Hiển thị tổng số xe đang có
+DA-02	Hiển thị số xe đang được thuê / đang khả dụng
+DA-03	Hiển thị số đơn thuê gần đây, trạng thái
+DA-04	Hiển thị biểu đồ số lượt thuê theo tháng (nếu có)
+DA-05	Các dữ liệu thống kê chỉ phản ánh hoạt động của xe do Supplier đó sở hữu
+
+🔒 VI. Bảo mật và phân quyền
+ID	Mô tả yêu cầu nghiệp vụ
+SE-01	Supplier chỉ truy cập được vào các route được phân quyền (/supplier/*)
+SE-02	Nếu cố tình truy cập xe hoặc đơn của người khác → hệ thống trả lỗi 403 Forbidden
+SE-03	Mọi request phải xác thực bằng token JWT hoặc cơ chế tương tự
+SE-04	Nếu token hết hạn hoặc sai → redirect về login
