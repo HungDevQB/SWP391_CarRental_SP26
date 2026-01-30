@@ -21,7 +21,7 @@ const MessageInput = ({ onSend, disabled, setZoomImageUrl }) => {
         const formData = new FormData();
         formData.append('file', img);
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/chat-messages/upload-image`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/api/chat-messages/upload-image`, {
             method: 'POST',
             body: formData,
             headers: {

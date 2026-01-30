@@ -319,7 +319,7 @@ const CarConditionReportView = ({
                                                         
                                                         // Nếu đường dẫn tương đối, thêm base URL
                                                         if (imageSrc.startsWith('/uploads/')) {
-                                                            imageSrc = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${imageSrc}`;
+                                                            imageSrc = `${import.meta.env.VITE_API_URL || 'http://localhost:8081'}${imageSrc}`;
                                                         }
                                                         
                                                         return (

@@ -43,7 +43,7 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         try {
           const token = sessionStorage.getItem("token")
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/chat-messages/between-users?senderId=${customer.id}&receiverId=${supplier.id}`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat-messages/between-users?senderId=${customer.id}&receiverId=${supplier.id}`,
             {
               headers: {
                 Authorization: token ? `Bearer ${token}` : "",
@@ -131,7 +131,7 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         formData.append("file", img)
         try {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/chat-messages/upload-image`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat-messages/upload-image`,
             {
               method: "POST",
               body: formData,
@@ -347,7 +347,7 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
                                     }`}
                                   >
                                     {msg.imageUrls.map((url, i) => {
-                                      const fullUrl = url.startsWith("http") ? url : `http://localhost:8080${url}`
+                                      const fullUrl = url.startsWith("http") ? url : `http://localhost:8081${url}`
                                       return (
                                         <div key={i} className="relative group/image">
                                           <img

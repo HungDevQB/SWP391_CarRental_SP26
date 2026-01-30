@@ -8,7 +8,7 @@ import { useLocation } from "react-router-dom";
 import { FaUserCircle, FaSearch, FaComments, FaLock, FaChevronDown } from "react-icons/fa";
 import Header from "@/components/layout/Header/Header";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
 const Message = () => {
   const { isAuthenticated } = useAuth();

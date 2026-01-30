@@ -4,7 +4,7 @@ import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
 
 const SupplierChatManager = ({ supplierId, supplierName, customers: initialCustomers }) => {
   console.log('[SupplierChatManager] supplierId:', supplierId);

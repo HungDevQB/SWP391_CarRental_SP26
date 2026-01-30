@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaUserCircle, FaSearch, FaComments, FaLock } from 'react-icons/fa';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
 
 const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
   const [activeUserId, setActiveUserId] = useState(

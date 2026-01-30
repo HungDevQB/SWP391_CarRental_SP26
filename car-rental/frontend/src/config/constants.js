@@ -3,7 +3,7 @@ export const APP_NAME = 'Car Rental';
 export const APP_VERSION = '1.0.0';
 
 // API Constants
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = 'http://localhost:8081/api';
 export const API_TIMEOUT = 30000;
 export const API_RETRY_ATTEMPTS = 3;
 

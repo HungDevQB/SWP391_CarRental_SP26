@@ -212,7 +212,7 @@ const LoginRegisterPage = () => {
     setIsGoogleLoading(true);
     setError('');
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081';
       const response = await fetch(`${apiUrl}/oauth2/authorization/google`, { method: 'GET', redirect: 'manual' });
       if (response.type === 'opaqueredirect') {
         window.location.href = response.url;
@@ -242,7 +242,7 @@ const LoginRegisterPage = () => {
 
   // Lấy country code từ API khi mở form
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/country-codes`)
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/api/country-codes`)
       .then(res => {
         if (!res.ok) throw new Error('Không lấy được country code');
         return res.json();

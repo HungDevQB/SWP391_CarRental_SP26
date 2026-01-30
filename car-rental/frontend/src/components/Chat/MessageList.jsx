@@ -86,7 +86,7 @@ const MessageList = ({ messages, currentUserId, setZoomImageUrl }) => {
                         }`}
                       >
                         {msg.imageUrls.map((url, i) => {
-                          const fullUrl = url.startsWith("http") ? url : `http://localhost:8080${url}`;
+                          const fullUrl = url.startsWith("http") ? url : `http://localhost:8081${url}`;
                           return (
                             <div key={i} className="relative group/image">
                               <img

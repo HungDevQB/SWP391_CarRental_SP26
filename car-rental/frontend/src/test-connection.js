@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getItem } from '@/utils/auth';
 
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = 'http://localhost:8081';
 
 // Test kết nối cơ bản
 export const testConnection = async () => {
