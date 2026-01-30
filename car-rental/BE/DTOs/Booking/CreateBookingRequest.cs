@@ -19,6 +19,9 @@ public class CreateBookingRequest
     public string? DropoffLocation { get; set; }
     public string? PaymentMethod { get; set; }
     public string? PromotionCode { get; set; }
+
+    [MaxLength(500)]
+    public string? Note { get; set; }
 }
 
 public class UpdateBookingStatusRequest
