@@ -1,3 +1,4 @@
+// Booking entity - core rental transaction model
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
