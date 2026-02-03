@@ -47,60 +47,65 @@ public static class AuthenticationExtensions
                     return Task.CompletedTask;
                 }
             };
-        })
-        .AddGoogle(options =>
-        {
-            options.ClientId = config["Google:ClientId"] ?? "";
-            options.ClientSecret = config["Google:ClientSecret"] ?? "";
-            options.CallbackPath = "/login/oauth2/code/google";
-
-            options.Events.OnTicketReceived = async ctx =>
-            {
-                var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-                var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
-
-                var email = ctx.Principal?.FindFirst(ClaimTypes.Email)?.Value;
-                var name = ctx.Principal?.FindFirst(ClaimTypes.Name)?.Value;
-
-                if (string.IsNullOrEmpty(email))
-                {
-                    ctx.Response.Redirect("http://localhost:5173/login?error=no_email");
-                    ctx.HandleResponse();
-                    return;
-                }
-
-                var user = await db.Users.IgnoreQueryFilters()
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Email == email);
-
-                if (user == null)
-                {
-                    var customerRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == "customer");
-                    user = new User
-                    {
-                        Email = email,
-                        FullName = name,
-                        RoleId = customerRole?.RoleId ?? 3,
-                        LoginSource = "google",
-                        IsActive = true
-                    };
-                    db.Users.Add(user);
-                    await db.SaveChangesAsync();
-                    // Reload with role
-                    await db.Entry(user).Reference(u => u.Role).LoadAsync();
-                }
-
-                var role = user.Role?.RoleName ?? "customer";
-                var token = jwtService.GenerateToken(user.UserId, user.Email, role);
-                var expiresAt = jwtService.GetExpiresAtMs();
-
-                ctx.Response.Redirect(
-                    $"http://localhost:5173/oauth2/redirect?token={token}" +
-                    $"&username={Uri.EscapeDataString(user.Email)}" +
-                    $"&expiresAt={expiresAt}&role={role}");
-                ctx.HandleResponse();
-            };
         });
+
+        var googleClientSecret = config["Google:ClientSecret"];
+        if (!string.IsNullOrEmpty(googleClientSecret))
+        {
+            services.AddAuthentication()
+            .AddGoogle(options =>
+            {
+                options.ClientId = config["Google:ClientId"] ?? "";
+                options.ClientSecret = googleClientSecret;
+                options.CallbackPath = "/login/oauth2/code/google";
+
+                options.Events.OnTicketReceived = async ctx =>
+                {
+                    var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+                    var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
+
+                    var email = ctx.Principal?.FindFirst(ClaimTypes.Email)?.Value;
+                    var name = ctx.Principal?.FindFirst(ClaimTypes.Name)?.Value;
+
+                    if (string.IsNullOrEmpty(email))
+                    {
+                        ctx.Response.Redirect("http://localhost:5173/login?error=no_email");
+                        ctx.HandleResponse();
+                        return;
+                    }
+
+                    var user = await db.Users.IgnoreQueryFilters()
+                        .Include(u => u.Role)
+                        .FirstOrDefaultAsync(u => u.Email == email);
+
+                    if (user == null)
+                    {
+                        var customerRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == "customer");
+                        user = new User
+                        {
+                            Email = email,
+                            FullName = name,
+                            RoleId = customerRole?.RoleId ?? 3,
+                            LoginSource = "google",
+                            IsActive = true
+                        };
+                        db.Users.Add(user);
+                        await db.SaveChangesAsync();
+                        await db.Entry(user).Reference(u => u.Role).LoadAsync();
+                    }
+
+                    var role = user.Role?.RoleName ?? "customer";
+                    var token = jwtService.GenerateToken(user.UserId, user.Email, role);
+                    var expiresAt = jwtService.GetExpiresAtMs();
+
+                    ctx.Response.Redirect(
+                        $"http://localhost:5173/oauth2/redirect?token={token}" +
+                        $"&username={Uri.EscapeDataString(user.Email)}" +
+                        $"&expiresAt={expiresAt}&role={role}");
+                    ctx.HandleResponse();
+                };
+            });
+        }
 
         return services;
     }
