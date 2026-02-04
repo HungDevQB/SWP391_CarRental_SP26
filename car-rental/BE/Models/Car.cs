@@ -1,3 +1,4 @@
+// Car entity - vehicle information and rental details
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
