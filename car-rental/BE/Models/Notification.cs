@@ -1,3 +1,4 @@
+// Notification entity - real-time user notification model
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
