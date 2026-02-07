@@ -4,10 +4,8 @@ namespace CarRental.API.Services.Interfaces;
 
 public interface IPaymentService
 {
-    Task<string> CreateVNPayUrlAsync(int bookingId, decimal amount, string orderInfo);
-    Task<bool> ProcessVNPayCallbackAsync(VNPayCallbackRequest request);
-    Task<string> CreateMoMoUrlAsync(int bookingId, decimal amount, string orderInfo);
-    Task<bool> ProcessMoMoCallbackAsync(MoMoCallbackRequest request);
+    Task<StripePaymentIntentDto> CreateStripePaymentIntentAsync(int bookingId, decimal amount);
+    Task<bool> ProcessStripeWebhookAsync(string payload, string stripeSignature);
     Task<PaymentDto?> GetByIdAsync(int paymentId);
     Task<IEnumerable<PaymentDto>> GetByBookingAsync(int bookingId);
     Task<bool> ConfirmCashPaymentAsync(int paymentId, int supplierId, ConfirmCashPaymentRequest request);

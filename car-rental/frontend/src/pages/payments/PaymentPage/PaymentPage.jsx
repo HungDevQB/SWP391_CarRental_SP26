@@ -9,6 +9,7 @@ import PickupPaymentSummary from "@/components/features/payments/PickupPaymentSu
 import RetryPaymentSummary from '@/components/features/payments/RetryPaymentSummary'
 import PlatformFeePaymentSummary from '@/components/features/payments/PlatformFeePaymentSummary'
 import LoadingSpinner from '@/components/ui/Loading/LoadingSpinner.jsx';
+import StripePayment from '@/components/features/payments/StripePayment.jsx';
 import {
   FaCreditCard,
   FaHandHoldingUsd,
@@ -28,7 +29,6 @@ import {
   FaMapMarkerAlt,
   FaEnvelope,
   FaUndoAlt,
-  FaMobile,
 } from "react-icons/fa"
 import { getItem } from '@/utils/auth'
 import Footer from '@/components/layout/Footer/Footer.jsx';
@@ -404,6 +404,8 @@ const PaymentPage = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
   const [isLoading, setIsLoading] = useState(true)
+  const [showStripeForm, setShowStripeForm] = useState(false)
+  const [stripeBookingId, setStripeBookingId] = useState(null)
 
   // Lấy total và deposit từ bookingInfo nếu có, ưu tiên data truyền từ ProfilePage
   let total = 0;
@@ -833,6 +835,16 @@ const PaymentPage = () => {
       console.log("🔍 [DEBUG] Final paymentType:", paymentType);
       console.log("🔍 [DEBUG] Using endpoint:", endpoint);
 
+      // Stripe: tạo booking trước rồi show Stripe form
+      if (paymentMethod === "stripe") {
+        const bookingResponse = await post(endpoint, { ...paymentData, paymentMethod: "stripe" });
+        const createdBookingId = bookingResponse.bookingId || bookingId;
+        setStripeBookingId(createdBookingId);
+        setShowStripeForm(true);
+        setIsProcessing(false);
+        return;
+      }
+
       const response = await post(endpoint, paymentData)
 
       if (response.redirectUrl) {
@@ -1096,26 +1108,14 @@ const PaymentPage = () => {
 
                     <div className="space-y-6">
                       <PaymentMethodCard
-                        method="vnpay"
-                        selected={paymentMethod === "vnpay"}
+                        method="stripe"
+                        selected={paymentMethod === "stripe"}
                         onSelect={handlePaymentMethodChange}
                         icon={FaCreditCard}
-                        title="VNPay"
-                        description="Thanh toán online qua VNPay - Nhanh chóng, an toàn và tiện lợi"
+                        title="Stripe (Thẻ tín dụng / Ghi nợ)"
+                        description="Thanh toán an toàn qua Stripe - Visa, Mastercard và nhiều hơn nữa"
                         badge="Khuyến nghị"
                         color="blue"
-                      />
-
-                      <PaymentMethodCard
-                        method="momo"
-                        selected={paymentMethod === "momo"}
-                        onSelect={handlePaymentMethodChange}
-                        icon={FaMobile}
-                        title="MoMo"
-                        description="Thanh toán qua ví MoMo - Nhanh chóng và tiện lợi với nhiều ưu đãi"
-                        badge="Mới"
-                        color="pink"
-                        logoImg="/images/momo-logo.png"
                       />
 
                       {!platformFeePayment && (
@@ -1129,6 +1129,34 @@ const PaymentPage = () => {
                           badge="Truyền thống"
                           color="orange"
                         />
+                      )}
+
+                      {/* Stripe form hiện khi đã chọn stripe */}
+                      {paymentMethod === "stripe" && showStripeForm && stripeBookingId && (
+                        <div className="mt-4 p-6 bg-white border-2 border-blue-200 rounded-2xl shadow-lg">
+                          <h3 className="font-semibold text-gray-800 mb-4">Nhập thông tin thẻ</h3>
+                          <StripePayment
+                            bookingId={stripeBookingId}
+                            amount={amountToPay}
+                            onSuccess={(intent) => {
+                              setPaymentStatus("success");
+                              showToast("Thanh toán thành công!", "success");
+                              setTimeout(() => {
+                                navigate("/booking-success", {
+                                  state: {
+                                    bookingId: stripeBookingId,
+                                    paymentId: intent.id,
+                                    amount: amountToPay,
+                                    priceBreakdown,
+                                    customerInfo,
+                                    bookingInfo,
+                                  }
+                                });
+                              }, 1500);
+                            }}
+                            onError={(msg) => { setError(msg); setIsProcessing(false); }}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>

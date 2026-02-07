@@ -1,11 +1,10 @@
-using System.Security.Cryptography;
-using System.Text;
 using CarRental.API.Data;
 using CarRental.API.DTOs.Payment;
 using CarRental.API.Models;
 using CarRental.API.Repositories.Interfaces;
 using CarRental.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
 
 namespace CarRental.API.Services;
 
@@ -23,124 +22,86 @@ public class PaymentService : IPaymentService
         _context = context;
         _config = config;
         _notification = notification;
+        StripeConfiguration.ApiKey = config["Stripe:SecretKey"];
     }
 
-    public async Task<string> CreateVNPayUrlAsync(int bookingId, decimal amount, string orderInfo)
+    public async Task<StripePaymentIntentDto> CreateStripePaymentIntentAsync(int bookingId, decimal amount)
     {
-        var vnpUrl = _config["VNPay:PayUrl"] ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        var tmnCode = _config["VNPay:TmnCode"] ?? "";
-        var hashSecret = _config["VNPay:HashSecret"] ?? "";
-
-        var vnpParams = new SortedDictionary<string, string>
+        var amountInCents = (long)(amount * 100);
+        var options = new PaymentIntentCreateOptions
         {
-            ["vnp_Version"] = "2.1.0",
-            ["vnp_Command"] = "pay",
-            ["vnp_TmnCode"] = tmnCode,
-            ["vnp_Amount"] = ((long)(amount * 100)).ToString(),
-            ["vnp_CurrCode"] = "VND",
-            ["vnp_TxnRef"] = $"{bookingId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
-            ["vnp_OrderInfo"] = orderInfo,
-            ["vnp_OrderType"] = "other",
-            ["vnp_Locale"] = "vn",
-            ["vnp_ReturnUrl"] = _config["VNPay:ReturnUrl"] ?? $"http://localhost:8081/api/payment/vnpay-callback",
-            ["vnp_IpAddr"] = "127.0.0.1",
-            ["vnp_CreateDate"] = DateTime.Now.ToString("yyyyMMddHHmmss")
+            Amount = amountInCents,
+            Currency = "usd",
+            AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions { Enabled = true },
+            Metadata = new Dictionary<string, string> { { "bookingId", bookingId.ToString() } }
         };
-
-        var query = string.Join("&", vnpParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
-        var checksum = HmacSHA512(hashSecret, query);
-
-        return $"{vnpUrl}?{query}&vnp_SecureHash={checksum}";
+        var service = new PaymentIntentService();
+        var intent = await service.CreateAsync(options);
+        return new StripePaymentIntentDto
+        {
+            ClientSecret = intent.ClientSecret,
+            PaymentIntentId = intent.Id,
+            Amount = amountInCents,
+            Currency = "usd"
+        };
     }
 
-    public async Task<bool> ProcessVNPayCallbackAsync(VNPayCallbackRequest request)
+    public async Task<bool> ProcessStripeWebhookAsync(string payload, string stripeSignature)
     {
-        if (request.vnp_ResponseCode != "00" && request.vnp_TransactionStatus != "00")
-            return false;
+        var webhookSecret = _config["Stripe:WebhookSecret"] ?? "";
+        Stripe.Event stripeEvent;
+        try
+        {
+            stripeEvent = string.IsNullOrEmpty(webhookSecret)
+                ? EventUtility.ParseEvent(payload)
+                : EventUtility.ConstructEvent(payload, stripeSignature, webhookSecret);
+        }
+        catch { return false; }
 
-        // Parse booking ID from TxnRef
-        var parts = request.vnp_TxnRef?.Split('_');
-        if (parts == null || !int.TryParse(parts[0], out var bookingId)) return false;
+        if (stripeEvent.Type != "payment_intent.succeeded") return true;
+        var intent = stripeEvent.Data.Object as PaymentIntent;
+        if (intent == null) return false;
+        if (!intent.Metadata.TryGetValue("bookingId", out var bookingIdStr) ||
+            !int.TryParse(bookingIdStr, out var bookingId)) return false;
+        return await FinalizePaymentAsync(bookingId, "STRIPE", intent.Id, intent.Amount / 100m);
+    }
 
+    public async Task<bool> ConfirmStripePaymentAsync(int bookingId, string paymentIntentId)
+    {
+        var service = new PaymentIntentService();
+        var intent = await service.GetAsync(paymentIntentId);
+        if (intent.Status != "succeeded") return false;
+        return await FinalizePaymentAsync(bookingId, "STRIPE", intent.Id, intent.Amount / 100m);
+    }
+
+    private async Task<bool> FinalizePaymentAsync(int bookingId, string method, string transactionId, decimal amount)
+    {
         var booking = await _context.Bookings.FindAsync(bookingId);
         if (booking == null) return false;
+        var existing = await _context.Payments.FirstOrDefaultAsync(p =>
+            p.BookingId == bookingId && p.TransactionId == transactionId);
+        if (existing != null) return true;
 
         var payment = new Payment
         {
             BookingId = bookingId,
-            Amount = booking.TotalPrice,
-            PaymentMethod = "VNPAY",
+            Amount = amount,
+            PaymentMethod = method,
             PaymentStatus = "completed",
-            TransactionId = request.vnp_TransactionNo,
+            TransactionId = transactionId,
             PaymentDate = DateTime.UtcNow
         };
-
         await _paymentRepo.AddAsync(payment);
 
-        // Update booking status to confirmed
         var confirmedStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "confirmed");
         if (confirmedStatus != null)
         {
             booking.StatusId = confirmedStatus.StatusId;
             booking.UpdatedAt = DateTime.UtcNow;
         }
-
         await _paymentRepo.SaveChangesAsync();
-        await _notification.SendAsync(booking.CustomerId, $"Thanh toán đơn #{bookingId} thành công!", "payment", bookingId, "booking");
-        return true;
-    }
-
-    public async Task<string> CreateMoMoUrlAsync(int bookingId, decimal amount, string orderInfo)
-    {
-        // MoMo sandbox implementation
-        var endpoint = _config["MoMo:Endpoint"] ?? "https://test-payment.momo.vn/v2/gateway/api/create";
-        var partnerCode = _config["MoMo:PartnerCode"] ?? "";
-        var accessKey = _config["MoMo:AccessKey"] ?? "";
-        var secretKey = _config["MoMo:SecretKey"] ?? "";
-        var redirectUrl = _config["MoMo:ReturnUrl"] ?? $"http://localhost:8081/api/payment/momo-callback";
-        var ipnUrl = _config["MoMo:NotifyUrl"] ?? $"http://localhost:8081/api/payment/momo-notify";
-        var orderId = $"{bookingId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-        var requestId = Guid.NewGuid().ToString();
-
-        var rawHash = $"accessKey={accessKey}&amount={amount}&extraData=&ipnUrl={ipnUrl}&orderId={orderId}" +
-                      $"&orderInfo={orderInfo}&partnerCode={partnerCode}&redirectUrl={redirectUrl}" +
-                      $"&requestId={requestId}&requestType=payWithMethod";
-
-        var signature = HmacSHA256(secretKey, rawHash);
-
-        // Return simplified URL (full impl would call MoMo API)
-        return $"{endpoint}?orderId={orderId}&amount={amount}&signature={signature}";
-    }
-
-    public async Task<bool> ProcessMoMoCallbackAsync(MoMoCallbackRequest request)
-    {
-        if (request.ResultCode != 0) return false;
-
-        var parts = request.OrderId?.Split('_');
-        if (parts == null || !int.TryParse(parts[0], out var bookingId)) return false;
-
-        var booking = await _context.Bookings.FindAsync(bookingId);
-        if (booking == null) return false;
-
-        var payment = new Payment
-        {
-            BookingId = bookingId,
-            Amount = booking.TotalPrice,
-            PaymentMethod = "MOMO",
-            PaymentStatus = "completed",
-            TransactionId = request.TransId.ToString(),
-            PaymentDate = DateTime.UtcNow
-        };
-
-        await _paymentRepo.AddAsync(payment);
-        var confirmedStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "confirmed");
-        if (confirmedStatus != null)
-        {
-            booking.StatusId = confirmedStatus.StatusId;
-            booking.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await _paymentRepo.SaveChangesAsync();
+        await _notification.SendAsync(booking.CustomerId,
+            $"Thanh toan don #{bookingId} thanh cong!", "payment", bookingId, "booking");
         return true;
     }
 
@@ -159,16 +120,14 @@ public class PaymentService : IPaymentService
     public async Task<bool> ConfirmCashPaymentAsync(int paymentId, int supplierId, ConfirmCashPaymentRequest request)
     {
         var payment = await _paymentRepo.GetByIdAsync(paymentId)
-            ?? throw new KeyNotFoundException("Payment không tồn tại");
-
+            ?? throw new KeyNotFoundException("Payment khong ton tai");
         var confirmation = await _context.CashPaymentConfirmations
             .FirstOrDefaultAsync(c => c.PaymentId == paymentId && c.SupplierId == supplierId);
-
         if (confirmation == null)
         {
-            var feeConfig = await _context.SystemConfigurations.FirstOrDefaultAsync(c => c.ConfigKey == "platform_fee_rate");
+            var feeConfig = await _context.SystemConfigurations
+                .FirstOrDefaultAsync(c => c.ConfigKey == "platform_fee_rate");
             var feeRate = decimal.TryParse(feeConfig?.ConfigValue, out var rate) ? rate : 0.10m;
-
             confirmation = new CashPaymentConfirmation
             {
                 PaymentId = paymentId,
@@ -178,11 +137,9 @@ public class PaymentService : IPaymentService
             };
             await _context.CashPaymentConfirmations.AddAsync(confirmation);
         }
-
         confirmation.IsConfirmed = true;
         confirmation.ConfirmedAt = DateTime.UtcNow;
         confirmation.Notes = request.Notes;
-
         payment.PaymentStatus = "completed";
         _paymentRepo.Update(payment);
         await _context.SaveChangesAsync();
@@ -194,16 +151,10 @@ public class PaymentService : IPaymentService
             .Where(c => c.SupplierId == supplierId && !c.IsConfirmed && !c.IsDeleted)
             .Select(c => new CashPaymentConfirmationDto
             {
-                Id = c.Id,
-                PaymentId = c.PaymentId,
-                SupplierId = c.SupplierId,
-                IsConfirmed = c.IsConfirmed,
-                ConfirmedAt = c.ConfirmedAt,
-                Notes = c.Notes,
-                PlatformFee = c.PlatformFee,
-                PlatformFeeStatus = c.PlatformFeeStatus,
-                PlatformFeeDueDate = c.PlatformFeeDueDate,
-                PenaltyAmount = c.PenaltyAmount,
+                Id = c.Id, PaymentId = c.PaymentId, SupplierId = c.SupplierId,
+                IsConfirmed = c.IsConfirmed, ConfirmedAt = c.ConfirmedAt, Notes = c.Notes,
+                PlatformFee = c.PlatformFee, PlatformFeeStatus = c.PlatformFeeStatus,
+                PlatformFeeDueDate = c.PlatformFeeDueDate, PenaltyAmount = c.PenaltyAmount,
                 TotalAmountDue = c.TotalAmountDue
             }).ToListAsync();
 
@@ -219,42 +170,17 @@ public class PaymentService : IPaymentService
 
     private static PaymentDto MapToDto(Payment p) => new()
     {
-        PaymentId = p.PaymentId,
-        BookingId = p.BookingId,
-        Amount = p.Amount,
-        PaymentMethod = p.PaymentMethod,
-        PaymentStatus = p.PaymentStatus,
-        TransactionId = p.TransactionId,
-        PaymentDate = p.PaymentDate,
-        CreatedAt = p.CreatedAt
+        PaymentId = p.PaymentId, BookingId = p.BookingId, Amount = p.Amount,
+        PaymentMethod = p.PaymentMethod, PaymentStatus = p.PaymentStatus,
+        TransactionId = p.TransactionId, PaymentDate = p.PaymentDate, CreatedAt = p.CreatedAt
     };
 
     private static SupplierRevenueDto MapRevenueToDto(SupplierRevenue r) => new()
     {
-        RevenueId = r.RevenueId,
-        BookingId = r.BookingId,
-        SupplierId = r.SupplierId,
-        GrossAmount = r.GrossAmount,
-        PlatformFeePercentage = r.PlatformFeePercentage,
-        PlatformFeeAmount = r.PlatformFeeAmount,
-        NetAmount = r.NetAmount,
-        RevenueStatus = r.RevenueStatus,
-        PaymentDate = r.PaymentDate,
-        Notes = r.Notes,
-        CreatedAt = r.CreatedAt
+        RevenueId = r.RevenueId, BookingId = r.BookingId, SupplierId = r.SupplierId,
+        GrossAmount = r.GrossAmount, PlatformFeePercentage = r.PlatformFeePercentage,
+        PlatformFeeAmount = r.PlatformFeeAmount, NetAmount = r.NetAmount,
+        RevenueStatus = r.RevenueStatus, PaymentDate = r.PaymentDate,
+        Notes = r.Notes, CreatedAt = r.CreatedAt
     };
-
-    private static string HmacSHA512(string key, string data)
-    {
-        using var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(key));
-        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-        return string.Concat(bytes.Select(b => b.ToString("x2")));
-    }
-
-    private static string HmacSHA256(string key, string data)
-    {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-        return string.Concat(bytes.Select(b => b.ToString("x2")));
-    }
 }

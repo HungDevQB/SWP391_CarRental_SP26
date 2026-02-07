@@ -7,7 +7,7 @@ namespace CarRental.API.Models;
 public class UserSession
 {
     [Key]
-    [Column("session_id")]
+    [Column("id")]
     public int SessionId { get; set; }
 
     [Column("user_id")]
@@ -21,19 +21,11 @@ public class UserSession
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("expires_at")]
+    [Column("expired_at")]
     public DateTime ExpiresAt { get; set; }
 
-    [Column("is_revoked")]
-    public bool IsRevoked { get; set; } = false;
-
-    [MaxLength(500)]
-    [Column("device_info")]
-    public string? DeviceInfo { get; set; }
-
-    [MaxLength(50)]
-    [Column("ip_address")]
-    public string? IpAddress { get; set; }
+    [Column("is_active")]
+    public bool IsRevoked { get; set; } = true;
 
     // Navigation
     [ForeignKey("UserId")]

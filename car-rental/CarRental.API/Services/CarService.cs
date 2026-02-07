@@ -48,13 +48,12 @@ public class CarService : ICarService
             CarModel = request.CarModel,
             LicensePlate = request.LicensePlate,
             Year = request.Year,
-            Seats = request.Seats,
+            Seats = (byte?)request.Seats,
             Transmission = request.Transmission,
             RentalPricePerDay = request.RentalPricePerDay,
             Description = request.Description,
             RegionId = request.RegionId,
-            Location = request.Location,
-            Status = "AVAILABLE"
+            StatusId = 11 // available
         };
 
         await _carRepo.AddAsync(car);
@@ -83,13 +82,16 @@ public class CarService : ICarService
         if (request.CarModel != null) car.CarModel = request.CarModel;
         if (request.LicensePlate != null) car.LicensePlate = request.LicensePlate;
         if (request.Year.HasValue) car.Year = request.Year;
-        if (request.Seats.HasValue) car.Seats = request.Seats;
+        if (request.Seats.HasValue) car.Seats = (byte?)request.Seats;
         if (request.Transmission != null) car.Transmission = request.Transmission;
         if (request.RentalPricePerDay.HasValue) car.RentalPricePerDay = request.RentalPricePerDay.Value;
         if (request.Description != null) car.Description = request.Description;
         if (request.RegionId.HasValue) car.RegionId = request.RegionId;
-        if (request.Location != null) car.Location = request.Location;
-        if (request.Status != null) car.Status = request.Status;
+        if (request.Status != null)
+        {
+            var status = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName.ToLower() == request.Status.ToLower());
+            if (status != null) car.StatusId = status.StatusId;
+        }
         car.UpdatedAt = DateTime.UtcNow;
 
         _carRepo.Update(car);
@@ -157,7 +159,8 @@ public class CarService : ICarService
     {
         var car = await _carRepo.GetByIdAsync(carId)
             ?? throw new KeyNotFoundException("Xe không tồn tại");
-        car.Status = status;
+        var statusEntity = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName.ToLower() == status.ToLower());
+        if (statusEntity != null) car.StatusId = statusEntity.StatusId;
         car.UpdatedAt = DateTime.UtcNow;
         _carRepo.Update(car);
         await _carRepo.SaveChangesAsync();
@@ -180,12 +183,12 @@ public class CarService : ICarService
         Transmission = c.Transmission,
         RentalPricePerDay = c.RentalPricePerDay,
         Description = c.Description,
-        Status = c.Status,
+        Status = c.Status?.StatusName ?? "available",
         RegionId = c.RegionId,
         RegionName = c.Region?.RegionName,
-        Location = c.Location,
-        NumOfTrip = c.NumOfTrip,
-        Rating = c.Rating,
+        Location = null,
+        NumOfTrip = 0,
+        Rating = 0,
         ImageUrls = c.Images.Select(i => i.ImageUrl).ToList(),
         CreatedAt = c.CreatedAt
     };
@@ -199,11 +202,11 @@ public class CarService : ICarService
         Seats = c.Seats,
         Transmission = c.Transmission,
         RentalPricePerDay = c.RentalPricePerDay,
-        Status = c.Status,
-        Location = c.Location,
+        Status = c.Status?.StatusName ?? "available",
+        Location = null,
         RegionName = c.Region?.RegionName,
-        Rating = c.Rating,
-        NumOfTrip = c.NumOfTrip,
+        Rating = 0,
+        NumOfTrip = 0,
         ThumbnailUrl = c.Images.FirstOrDefault()?.ImageUrl,
         FuelTypeName = c.FuelType?.FuelTypeName
     };

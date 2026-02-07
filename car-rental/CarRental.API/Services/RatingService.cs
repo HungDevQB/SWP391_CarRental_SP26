@@ -37,13 +37,7 @@ public class RatingService : IRatingService
 
         // Update car average rating
         var avg = await _ratingRepo.GetAverageRatingAsync(request.CarId);
-        var car = await _context.Cars.FindAsync(request.CarId);
-        if (car != null)
-        {
-            car.Rating = Math.Round(avg, 2);
-            car.NumOfTrip = await _context.Bookings.CountAsync(b => b.CarId == request.CarId && b.StatusId == 4); // completed
-            await _context.SaveChangesAsync();
-        }
+        // Rating and NumOfTrip columns not in DB schema - skipping car update
 
         return new RatingDto
         {

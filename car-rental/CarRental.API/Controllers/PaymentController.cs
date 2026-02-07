@@ -1,5 +1,6 @@
 using CarRental.API.DTOs.Common;
 using CarRental.API.DTOs.Payment;
+using CarRental.API.Services;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,47 +12,47 @@ namespace CarRental.API.Controllers;
 public class PaymentController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
+    private readonly IConfiguration _config;
     private int CurrentUserId => int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-    public PaymentController(IPaymentService paymentService)
+    public PaymentController(IPaymentService paymentService, IConfiguration config)
     {
         _paymentService = paymentService;
+        _config = config;
     }
 
     [Authorize]
-    [HttpPost("vnpay/create")]
-    public async Task<IActionResult> CreateVNPay([FromBody] CreatePaymentRequest request)
+    [HttpPost("stripe/create-intent")]
+    public async Task<IActionResult> CreateStripeIntent([FromBody] CreateStripePaymentRequest request)
     {
-        var url = await _paymentService.CreateVNPayUrlAsync(
-            request.BookingId, request.Amount, $"Thanh toan don hang #{request.BookingId}");
-        return Ok(ApiResponse<string>.Ok(url));
+        var result = await _paymentService.CreateStripePaymentIntentAsync(request.BookingId, request.Amount);
+        return Ok(ApiResponse<StripePaymentIntentDto>.Ok(result));
     }
 
-    [HttpGet("vnpay-callback")]
-    public async Task<IActionResult> VNPayCallback([FromQuery] VNPayCallbackRequest request)
+    [HttpPost("stripe/webhook")]
+    public async Task<IActionResult> StripeWebhook()
     {
-        var success = await _paymentService.ProcessVNPayCallbackAsync(request);
-        // Redirect to frontend
-        var frontendUrl = success
-            ? $"http://localhost:5173/payment/success?bookingId={request.vnp_TxnRef?.Split('_')[0]}"
-            : "http://localhost:5173/payment/failed";
-        return Redirect(frontendUrl);
+        var payload = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+        var signature = Request.Headers["Stripe-Signature"].ToString();
+        var success = await _paymentService.ProcessStripeWebhookAsync(payload, signature);
+        return success ? Ok() : BadRequest();
     }
 
     [Authorize]
-    [HttpPost("momo/create")]
-    public async Task<IActionResult> CreateMoMo([FromBody] CreatePaymentRequest request)
+    [HttpPost("stripe/confirm")]
+    public async Task<IActionResult> ConfirmStripe([FromBody] ConfirmStripeRequest request)
     {
-        var url = await _paymentService.CreateMoMoUrlAsync(
-            request.BookingId, request.Amount, $"Thanh toan don hang #{request.BookingId}");
-        return Ok(ApiResponse<string>.Ok(url));
+        var paymentService = (PaymentService)_paymentService;
+        var success = await paymentService.ConfirmStripePaymentAsync(request.BookingId, request.PaymentIntentId);
+        return success
+            ? Ok(ApiResponse.OkNoData("Thanh toan thanh cong"))
+            : BadRequest(ApiResponse<object>.Fail("Thanh toan chua hoan tat"));
     }
 
-    [HttpPost("momo-callback")]
-    public async Task<IActionResult> MoMoCallback([FromBody] MoMoCallbackRequest request)
+    [HttpGet("stripe/publishable-key")]
+    public IActionResult GetPublishableKey()
     {
-        await _paymentService.ProcessMoMoCallbackAsync(request);
-        return Ok();
+        return Ok(ApiResponse<string>.Ok(_config["Stripe:PublishableKey"] ?? ""));
     }
 
     [Authorize]
@@ -67,7 +68,7 @@ public class PaymentController : ControllerBase
     public async Task<IActionResult> ConfirmCash(int paymentId, [FromBody] ConfirmCashPaymentRequest request)
     {
         await _paymentService.ConfirmCashPaymentAsync(paymentId, CurrentUserId, request);
-        return Ok(ApiResponse.OkNoData("Xác nhận thanh toán thành công"));
+        return Ok(ApiResponse.OkNoData("Xac nhan thanh toan thanh cong"));
     }
 
     [Authorize(Roles = "supplier")]
@@ -85,4 +86,10 @@ public class PaymentController : ControllerBase
         var revenue = await _paymentService.GetRevenueBySupplierAsync(CurrentUserId);
         return Ok(ApiResponse<IEnumerable<SupplierRevenueDto>>.Ok(revenue));
     }
+}
+
+public class ConfirmStripeRequest
+{
+    public int BookingId { get; set; }
+    public string PaymentIntentId { get; set; } = string.Empty;
 }

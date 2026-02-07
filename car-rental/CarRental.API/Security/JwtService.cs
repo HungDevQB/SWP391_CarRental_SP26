@@ -7,7 +7,7 @@ namespace CarRental.API.Security;
 
 public class JwtService
 {
-    private const string Secret = "Th1s1sAS3cur3K3yF0rJWT2025!@#";
+    private const string Secret = "Th1s1sAS3cur3K3yF0rJWT2025!@#CarRentalSecretKey_MustBe64CharsLongForHS512Algorithm!";
     private const int ExpiryHours = 24;
 
     private static SymmetricSecurityKey GetKey() =>

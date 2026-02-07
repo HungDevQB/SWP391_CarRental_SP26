@@ -92,7 +92,7 @@ public class PlatformFeeScheduler : BackgroundService
             {
                 booking.StatusId = completedStatus.StatusId;
                 booking.UpdatedAt = DateTime.UtcNow;
-                booking.Car!.NumOfTrip++;
+                // NumOfTrip not in DB schema
             }
 
             await context.SaveChangesAsync(ct);

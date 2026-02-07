@@ -247,10 +247,11 @@ const SearchPage = () => {
                 params: { page, size: carsPerPage },
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             })
+            const pageData = response.data?.data || {};
             return {
-                content: response.data || [],
-                totalElements: response.data?.length || 0,
-                totalPages: Math.ceil((response.data?.length || 0) / carsPerPage),
+                content: pageData.content || [],
+                totalElements: pageData.totalElements || 0,
+                totalPages: pageData.totalPages || 1,
             }
         } catch (error) {
             console.error("Error fetching featured cars:", error)
@@ -265,10 +266,11 @@ const SearchPage = () => {
                 params: { page, size: carsPerPage },
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             })
+            const pageData = response.data?.data || {};
             return {
-                content: response.data || [],
-                totalElements: response.data?.length || 0,
-                totalPages: Math.ceil((response.data?.length || 0) / carsPerPage),
+                content: pageData.content || [],
+                totalElements: pageData.totalElements || 0,
+                totalPages: pageData.totalPages || 1,
             }
         } catch (error) {
             console.error("Error fetching popular cars:", error)
@@ -291,11 +293,12 @@ const SearchPage = () => {
                 });
             }
             const response = await filterCars(finalFilters, page, carsPerPage, filters.sortBy || "")
-            setCars(response.data)
-            setFilteredCars(response.data.content || [])
+            const pageData = response.data?.data || {};
+            setCars(pageData)
+            setFilteredCars(pageData.content || [])
 
             // Xử lý thông báo khi không có xe
-            if (!response.data.content || response.data.content.length === 0) {
+            if (!pageData.content || pageData.content.length === 0) {
                 if (filters.pickupLocation) {
                     setNoCarMessage(`Không có xe phù hợp với địa điểm "${filters.pickupLocation}". Vui lòng thử địa điểm khác.`);
                 } else {
@@ -470,7 +473,7 @@ const SearchPage = () => {
             console.log('[SearchPage] Gọi API lấy region với countryCode:', countryCode);
             api.get(`/api/cars/regions/country/${countryCode}`)
                 .then(res => {
-                    setRegions(res.data || []);
+                    setRegions(res.data?.data || []);
                 })
                 .catch(err => {
                     console.error('Error fetching regions:', err);
@@ -1426,7 +1429,7 @@ const SearchPage = () => {
         api.get(`/api/cars/regions/country/${countryCode}`)
             .then(res => {
                 console.log('[SearchPage] Regions loaded:', res.data);
-                setRegions(res.data || []);
+                setRegions(res.data?.data || []);
             })
             .catch(err => {
                 console.error('Error fetching regions:', err);

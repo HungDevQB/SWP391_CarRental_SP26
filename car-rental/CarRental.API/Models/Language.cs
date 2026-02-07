@@ -19,6 +19,4 @@ public class Language
     [Column("language_code")]
     public string? LanguageCode { get; set; }
 
-    // Navigation
-    public ICollection<User> Users { get; set; } = new List<User>();
 }

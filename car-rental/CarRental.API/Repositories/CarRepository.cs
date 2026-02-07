@@ -13,6 +13,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
         await _dbSet.Include(c => c.CarBrand)
                     .Include(c => c.FuelType)
                     .Include(c => c.Region)
+                    .Include(c => c.Status)
                     .Include(c => c.Supplier)
                     .Include(c => c.Images)
                     .Include(c => c.Ratings)
@@ -28,11 +29,11 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
             .Include(c => c.CarBrand)
             .Include(c => c.FuelType)
             .Include(c => c.Region)
+            .Include(c => c.Status)
             .Include(c => c.Images)
             .AsQueryable();
 
         if (regionId.HasValue) query = query.Where(c => c.RegionId == regionId);
-        if (!string.IsNullOrEmpty(location)) query = query.Where(c => c.Location != null && c.Location.Contains(location));
         if (seats.HasValue) query = query.Where(c => c.Seats >= seats);
         if (!string.IsNullOrEmpty(transmission)) query = query.Where(c => c.Transmission == transmission);
         if (fuelTypeId.HasValue) query = query.Where(c => c.FuelTypeId == fuelTypeId);
@@ -51,15 +52,14 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
                 b.StatusId != 3)); // 3 = CANCELLED
         }
 
-        query = query.Where(c => c.Status == "AVAILABLE");
+        query = query.Where(c => c.StatusId == 11); // 11 = available
 
         query = sortBy?.ToLower() switch
         {
             "price_asc" => query.OrderBy(c => c.RentalPricePerDay),
             "price_desc" => query.OrderByDescending(c => c.RentalPricePerDay),
-            "rating" => query.OrderByDescending(c => c.Rating),
             "newest" => query.OrderByDescending(c => c.CreatedAt),
-            _ => query.OrderByDescending(c => c.NumOfTrip)
+            _ => query.OrderByDescending(c => c.CarId)
         };
 
         var total = await query.CountAsync();
@@ -70,6 +70,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
     public async Task<IEnumerable<Car>> GetBySupplierAsync(int supplierId) =>
         await _dbSet.Include(c => c.CarBrand)
                     .Include(c => c.FuelType)
+                    .Include(c => c.Status)
                     .Include(c => c.Images)
                     .Where(c => c.SupplierId == supplierId)
                     .ToListAsync();

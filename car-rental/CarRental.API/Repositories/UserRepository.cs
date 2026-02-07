@@ -17,7 +17,6 @@ public class UserRepository : BaseRepository<User>, IUserRepository
     public async Task<User?> GetWithDetailAsync(int userId) =>
         await _dbSet.Include(u => u.Role)
                     .Include(u => u.UserDetail)
-                    .Include(u => u.Language)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
     public async Task<bool> EmailExistsAsync(string email) =>

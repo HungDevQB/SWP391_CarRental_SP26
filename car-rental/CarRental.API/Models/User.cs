@@ -51,15 +51,9 @@ public class User
     [Column("login_source")]
     public string? LoginSource { get; set; }
 
-    [Column("language_id")]
-    public int? LanguageId { get; set; }
-
     // Navigation
     [ForeignKey("RoleId")]
     public Role? Role { get; set; }
-
-    [ForeignKey("LanguageId")]
-    public Language? Language { get; set; }
 
     public UserDetail? UserDetail { get; set; }
     public ICollection<Car> Cars { get; set; } = new List<Car>();

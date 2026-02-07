@@ -68,33 +68,23 @@ api.interceptors.response.use(
         console.log('[API Response Error] - ExpiresAt:', getItem('expiresAt'));
         
         if (error.response?.status === 401) {
-            console.log('[API Response Error] 401 error detected - checking if token expired');
-            
-            // Kiểm tra token có thực sự hết hạn không
-            if (isTokenExpired()) {
-                console.log('[API Response Error] Token has expired, clearing auth data');
-                
-                // Chỉ clear token nếu không phải là public endpoints
-                const isPublicEndpoint = error.config?.url?.includes('/cars') || 
-                                       error.config?.url?.includes('/regions') ||
-                                       error.config?.url?.includes('/car-brands');
-                
-                if (!isPublicEndpoint) {
+            const existingToken = getItem('token');
+            // Chỉ redirect khi có token nhưng bị hết hạn, không redirect khi chưa đăng nhập
+            if (existingToken && isTokenExpired()) {
+                const publicPaths = ['/', '/cars', '/car-detail', '/login', '/register'];
+                const isPublicPage = publicPaths.some(p =>
+                    window.location.pathname === p || window.location.pathname.startsWith(p + '/')
+                );
+                if (!isPublicPage && !window.location.pathname.includes('/payment/')) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('expiresAt');
                     localStorage.removeItem('role');
                     localStorage.removeItem('username');
                     localStorage.removeItem('userId');
-                    
-                    // Delay redirect để tránh interrupt payment flow
                     setTimeout(() => {
-                        if (!window.location.pathname.includes('/payment/')) {
-                            window.location.href = '/login?error=session_expired';
-                        }
+                        window.location.href = '/login?error=session_expired';
                     }, 100);
                 }
-            } else {
-                console.log('[API Response Error] Token not expired, may be server issue');
             }
         }
         return Promise.reject(error);
@@ -145,6 +135,16 @@ export const register = async (userData) => {
         console.error('[API] Register error:', error.response?.data);
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Đăng ký thất bại');
     }
+};
+
+export const sendEmailOtp = async (email) => {
+    const response = await api.post('/api/auth/send-email-otp', { email });
+    return response.data;
+};
+
+export const verifyEmailOtp = async (email, otp) => {
+    const response = await api.post('/api/auth/verify-email-otp', { email, otp });
+    return response.data;
 };
 
 export const checkEmail = async (email) => {
@@ -462,11 +462,12 @@ export const getCarBrands = async () => {
     if (cache.has(cacheKey)) return cache.get(cacheKey);
     try {
         const token = getToken();
-        const response = await api.get('/api/car-brands', {
+        const response = await api.get('/api/cars/brands', {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        cache.set(cacheKey, response.data);
-        return response.data;
+        const result = response.data?.data ?? response.data;
+        cache.set(cacheKey, result);
+        return result;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy danh sách thương hiệu xe thất bại');
     }
@@ -508,11 +509,12 @@ export const getRegions = async () => {
     if (cache.has(cacheKey)) return cache.get(cacheKey);
     try {
         const token = getToken();
-        const response = await api.get('/api/regions', {
+        const response = await api.get('/api/cars/regions', {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        cache.set(cacheKey, response.data);
-        return response.data;
+        const result = response.data?.data ?? response.data;
+        cache.set(cacheKey, result);
+        return result;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy danh sách địa điểm thất bại');
     }
@@ -704,6 +706,17 @@ export const getActivePromotions = async () => {
 };
 
 // Quản lý thanh toán
+// Stripe payment
+export const createStripePaymentIntent = async (bookingId, amount) => {
+    const response = await api.post('/api/payment/stripe/create-intent', { bookingId, amount });
+    return response.data?.data;
+};
+
+export const confirmStripePayment = async (bookingId, paymentIntentId) => {
+    const response = await api.post('/api/payment/stripe/confirm', { bookingId, paymentIntentId });
+    return response.data;
+};
+
 export const initiatePayment = async (paymentData) => {
     try {
         const response = await post('/api/payments', paymentData);

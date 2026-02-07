@@ -7,9 +7,6 @@ namespace CarRental.API.Models;
 public class UserDetail
 {
     [Key]
-    [Column("user_detail_id")]
-    public int UserDetailId { get; set; }
-
     [Column("user_id")]
     public int UserId { get; set; }
 

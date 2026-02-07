@@ -300,15 +300,16 @@ const HomePage = () => {
                     getRegions(),
                 ])
 
-                setFeaturedCars(featuredResponse?.data || [])
-                setPopularCars(popularResponse?.data || [])
+                setFeaturedCars(featuredResponse?.data?.data?.content || [])
+                setPopularCars(popularResponse?.data?.data?.content || [])
                 setBrands(brandsResponse || [])
                 // ✅ SỬA: Gọi API lấy regions theo country code
                 try {
                     const regionsResponse = await api.get('/api/cars/regions/country/+84', config);
                     console.log("[HomePage] Vietnam Regions API Response:", regionsResponse.data);
-                    setRegions(regionsResponse.data || []);
-                    setLocations(regionsResponse.data?.map((region) => region.regionName) || []);
+                    const regionsList = regionsResponse.data?.data || [];
+                    setRegions(regionsList);
+                    setLocations(regionsList.map((region) => region.regionName));
                 } catch (regionError) {
                     console.error("[HomePage] Error fetching Vietnam regions:", regionError);
                     // Fallback: thử API cũ và filter

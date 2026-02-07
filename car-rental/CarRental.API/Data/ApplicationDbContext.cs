@@ -107,12 +107,6 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Language)
-            .WithMany(l => l.Users)
-            .HasForeignKey(u => u.LanguageId)
-            .OnDelete(DeleteBehavior.SetNull);
-
         modelBuilder.Entity<UserDetail>()
             .HasOne(ud => ud.User)
             .WithOne(u => u.UserDetail)
@@ -143,6 +137,12 @@ public class ApplicationDbContext : DbContext
             .WithMany(r => r.Cars)
             .HasForeignKey(c => c.RegionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Car>()
+            .HasOne(c => c.Status)
+            .WithMany()
+            .HasForeignKey(c => c.StatusId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ── Booking relationships ─────────────────────────────────────────────
         modelBuilder.Entity<Booking>()

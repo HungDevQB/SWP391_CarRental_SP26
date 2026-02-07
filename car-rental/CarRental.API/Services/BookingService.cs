@@ -56,7 +56,7 @@ public class BookingService : IBookingService
         var car = await _carRepo.GetWithDetailsAsync(request.CarId)
             ?? throw new KeyNotFoundException("Xe không tồn tại");
 
-        if (car.Status != "AVAILABLE")
+        if (car.StatusId != 11) // 11 = available
             throw new InvalidOperationException("Xe không có sẵn để đặt");
 
         var isAvailable = await _carRepo.IsAvailableAsync(request.CarId, request.StartDate, request.EndDate);

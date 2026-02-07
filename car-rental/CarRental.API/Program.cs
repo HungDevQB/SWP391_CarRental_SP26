@@ -38,6 +38,7 @@ builder.Services.AddCors(options =>
 
 // ── 5. SignalR ────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 // ── 6. Controllers ────────────────────────────────────────────────────────────
 builder.Services.AddControllers()

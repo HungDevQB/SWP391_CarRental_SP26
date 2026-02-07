@@ -4,8 +4,7 @@ import { useState, useContext, useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { AuthContext } from "../../store/AuthContext"
-import { login, register } from "@/services/api"
-import PhoneOtpVerification from '../../components/Common/PhoneOtpVerification';
+import { login, register, sendEmailOtp, verifyEmailOtp } from "@/services/api"
 
 const LoginRegisterPage = () => {
   const { login: setAuthData } = useContext(AuthContext);
@@ -21,9 +20,10 @@ const LoginRegisterPage = () => {
   const [countryCode, setCountryCode] = useState('+84');
   const navigate = useNavigate();
   const [rememberMe, setRememberMe] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [pendingPhone, setPendingPhone] = useState('');
-  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // Login form
   const {
@@ -140,41 +140,53 @@ const LoginRegisterPage = () => {
     }
   };
 
-  const onRegisterSubmit = async (data) => {
-    setLoading(true);
-    setError('');
+  const handleSendEmailOtp = async () => {
+    const email = getValues('email');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast('Vui lòng nhập email hợp lệ trước', 'error');
+      return;
+    }
+    setOtpLoading(true);
     try {
-      const fullPhone = `${countryCode}${data.phone}`;
-      setPendingPhone(fullPhone);
-      setIsPhoneVerified(false);
-      setShowOtpModal(true);
-      // Không gọi API đăng ký ở đây
+      await sendEmailOtp(email);
+      setOtpSent(true);
+      setIsEmailVerified(false);
+      showToast('Mã OTP đã được gửi vào email!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Gửi OTP thất bại', 'error');
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
-  const handlePhoneVerified = async () => {
-    setIsPhoneVerified(true);
-    setShowOtpModal(false);
-    // Lưu trạng thái otpVerified và số điện thoại đã xác thực vào localStorage
-    if (pendingPhone) {
-      localStorage.setItem("otpVerified", "true");
-      localStorage.setItem("lastConfirmedPhone", pendingPhone);
+  const handleVerifyEmailOtp = async () => {
+    const email = getValues('email');
+    setOtpLoading(true);
+    try {
+      await verifyEmailOtp(email, otpValue);
+      setIsEmailVerified(true);
+      showToast('Xác thực email thành công!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Mã OTP không đúng', 'error');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const onRegisterSubmit = async (data) => {
+    if (!isEmailVerified) {
+      showToast('Vui lòng xác thực email trước khi đăng ký', 'error');
+      return;
     }
     setLoading(true);
     setError('');
     try {
-      const data = getValues();
-      const fullPhone = pendingPhone;
       const userData = {
         username: data.username,
         email: data.email,
         password: data.password,
-        phone: fullPhone,
         roleId: data.userType === 'renter' ? 3 : 2,
         statusId: 8,
-        countryCode: countryCode,
         preferredLanguage: 'vi',
         userDetail: {
           fullName: data.username,
@@ -184,22 +196,15 @@ const LoginRegisterPage = () => {
       if (userData.roleId === 2) {
         showToast('Vui lòng hoàn thiện hồ sơ chủ xe!', 'success');
         setTimeout(() => {
-          navigate('/owner-registration', { 
-            state: { 
-              email: data.email, 
-              username: data.username,
-              phone: fullPhone,
-              password: data.password
-            } 
+          navigate('/owner-registration', {
+            state: { email: data.email, username: data.username, password: data.password }
           });
         }, 1000);
         return;
       }
-      const response = await register(userData);
+      await register(userData);
       showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
-      setTimeout(() => {
-        setRegisterActive(false);
-      }, 1500);
+      setTimeout(() => { setRegisterActive(false); }, 1500);
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
       showToast('Đăng ký thất bại!', 'error');
@@ -509,40 +514,37 @@ const LoginRegisterPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Xác thực email <span className="text-red-500">*</span></label>
                     <div className="flex gap-2">
-                      <div className="relative w-36">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="ri-phone-line text-gray-400"></i>
-                        </div>
-                        <select
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white w-full text-sm appearance-none cursor-pointer hover:border-blue-400"
-                        >
-                          {countryCodes.map((country) => (
-                            <option key={country.countryCode} value={country.countryCode}>
-                              {country.countryName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <input
-                        {...registerRegister('phone', {
-                          required: 'Số điện thoại là bắt buộc',
-                          pattern: {
-                            value: /^[0-9]{6,15}$/,
-                            message: 'Chỉ nhập số, không bao gồm mã quốc gia và số 0',
-                          },
-                        })}
-                        type="text"
-                        placeholder="Nhập số điện thoại"
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-blue-400"
-                      />
+                      <button
+                        type="button"
+                        onClick={handleSendEmailOtp}
+                        disabled={otpLoading || isEmailVerified}
+                        className="px-4 py-3 rounded-lg text-sm font-medium text-white transition-all duration-200 disabled:opacity-60"
+                        style={{ background: isEmailVerified ? '#16a34a' : '#3b82f6', whiteSpace: 'nowrap' }}
+                      >
+                        {isEmailVerified ? '✓ Đã xác thực' : otpSent ? 'Gửi lại' : 'Gửi mã OTP'}
+                      </button>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">Ví dụ: 912345678 (không bao gồm mã quốc gia)</p>
-                    {registerErrors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{registerErrors.phone.message}</p>
+                    {otpSent && !isEmailVerified && (
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={otpValue}
+                          onChange={(e) => setOtpValue(e.target.value)}
+                          placeholder="Nhập mã OTP từ email"
+                          maxLength={6}
+                          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyEmailOtp}
+                          disabled={otpLoading || !otpValue}
+                          className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60"
+                        >
+                          Xác thực
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -769,28 +771,6 @@ const LoginRegisterPage = () => {
           </div>
         </div>
       </div>
-      {showOtpModal && pendingPhone && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Xác thực số điện thoại</h3>
-            <PhoneOtpVerification phone={pendingPhone} onVerified={handlePhoneVerified} />
-            <button className="close-btn" onClick={() => setShowOtpModal(false)}>Đóng</button>
-          </div>
-          <style>{`
-            .modal-overlay {
-              position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-              background: rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; justify-content: center;
-            }
-            .modal {
-              background: #fff; border-radius: 12px; padding: 32px; min-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-              display: flex; flex-direction: column; align-items: center;
-            }
-            .close-btn {
-              margin-top: 16px; background: #eee; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;
-            }
-          `}</style>
-        </div>
-      )}
     </div>
   );
 };

@@ -211,7 +211,7 @@ public class UserService : IUserService
 
     private static UserDetailDto MapDetailToDto(UserDetail d) => new()
     {
-        UserDetailId = d.UserDetailId,
+        UserDetailId = d.UserId,
         UserId = d.UserId,
         Address = d.Address,
         DateOfBirth = d.DateOfBirth,

@@ -25,6 +25,13 @@ public class CarController : ControllerBase
         return Ok(ApiResponse<PageResponse<CarListDto>>.Ok(result));
     }
 
+    [HttpGet("filter")]
+    public async Task<IActionResult> Filter([FromQuery] CarSearchRequest request)
+    {
+        var result = await _carService.SearchAsync(request);
+        return Ok(ApiResponse<PageResponse<CarListDto>>.Ok(result));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -60,6 +67,30 @@ public class CarController : ControllerBase
     {
         var years = await _carService.GetYearsAsync();
         return Ok(ApiResponse<IEnumerable<int>>.Ok(years));
+    }
+
+    [HttpGet("featured")]
+    public async Task<IActionResult> GetFeatured([FromQuery] int size = 8)
+    {
+        var req = new CarSearchRequest { Page = 0, Size = size, SortBy = "newest" };
+        var result = await _carService.SearchAsync(req);
+        return Ok(ApiResponse<PageResponse<CarListDto>>.Ok(result));
+    }
+
+    [HttpGet("popular")]
+    public async Task<IActionResult> GetPopular([FromQuery] int size = 8)
+    {
+        var req = new CarSearchRequest { Page = 0, Size = size };
+        var result = await _carService.SearchAsync(req);
+        return Ok(ApiResponse<PageResponse<CarListDto>>.Ok(result));
+    }
+
+    [HttpGet("regions/country/{countryCode}")]
+    public async Task<IActionResult> GetRegionsByCountry(string countryCode)
+    {
+        var regions = await _carService.GetRegionsAsync();
+        var filtered = regions.Where(r => r.CountryCode == countryCode);
+        return Ok(ApiResponse<IEnumerable<RegionDto>>.Ok(filtered));
     }
 
     [Authorize(Roles = "supplier,admin")]

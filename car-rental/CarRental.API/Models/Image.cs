@@ -18,15 +18,15 @@ public class Image
     [Column("image_url")]
     public string ImageUrl { get; set; } = string.Empty;
 
-    [MaxLength(50)]
-    [Column("image_type")]
-    public string? ImageType { get; set; }
+    [MaxLength(200)]
+    [Column("description")]
+    public string? Description { get; set; }
+
+    [Column("is_main")]
+    public bool IsMain { get; set; } = false;
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
-
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
     [ForeignKey("CarId")]

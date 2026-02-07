@@ -7,7 +7,7 @@ namespace CarRental.API.Models;
 public class CarBrand
 {
     [Key]
-    [Column("car_brand_id")]
+    [Column("brand_id")]
     public int CarBrandId { get; set; }
 
     [Required]
