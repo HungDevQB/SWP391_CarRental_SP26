@@ -1,3 +1,4 @@
+// BookingRepository - data access layer for booking operations
 using CarRental.API.Data;
 using CarRental.API.Models;
 using CarRental.API.Repositories.Interfaces;
