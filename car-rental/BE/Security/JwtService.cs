@@ -1,3 +1,4 @@
+// JwtService - JWT token generation and validation
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
