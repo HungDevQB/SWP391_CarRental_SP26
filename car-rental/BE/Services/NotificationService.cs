@@ -1,3 +1,4 @@
+// NotificationService - real-time push notifications
 using CarRental.API.Data;
 using CarRental.API.DTOs.Common;
 using CarRental.API.Models;
