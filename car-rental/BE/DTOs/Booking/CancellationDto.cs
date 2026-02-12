@@ -12,6 +12,8 @@ public class CancellationDto
     public DateTime CancellationDate { get; set; }
     public decimal? RefundAmount { get; set; }
     public string? RefundStatus { get; set; }
+    public DateTime? RefundDeadline { get; set; }
+    public bool IsRefundEligible { get; set; }
 }
 
 public class CreateCancellationRequest
