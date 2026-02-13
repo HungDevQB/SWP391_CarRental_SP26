@@ -1,3 +1,4 @@
+// BookingService - business logic for rental bookings
 using CarRental.API.Data;
 using CarRental.API.DTOs.Booking;
 using CarRental.API.DTOs.Common;
