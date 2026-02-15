@@ -168,6 +168,13 @@ const BookingModal = ({ isOpen, onClose, car, onSubmit }) => {
     );
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url}`;
+};
+
 const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavoriteChange }) => {
     const navigate = useNavigate();
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -232,11 +239,12 @@ const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavori
                 )}
                 <img
                     src={
-                        car.images?.find((img) => img.isMain)?.imageUrl ||
-                        car.images?.[0]?.imageUrl ||
+                        getImageUrl(car.thumbnailUrl) ||
+                        getImageUrl(car.images?.find((img) => img.isMain)?.imageUrl) ||
+                        getImageUrl(car.images?.[0]?.imageUrl) ||
                         "https://via.placeholder.com/400x250?text=Car+Image"
                     }
-                    alt={`${car.brandName} ${car.model}`}
+                    alt={`${car.brandName} ${car.carModel || car.model}`}
                     className={`w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-110 ${imageLoaded ? "opacity-100" : "opacity-0"
                         }`}
                     loading="lazy"
@@ -266,7 +274,7 @@ const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavori
                             className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-1"
                             onClick={() => navigate(`/cars/${car.carId}`)}
                         >
-                            {car.model} {car.year}
+                            {car.carModel || car.model} {car.year}
                         </h3>
                         <p className="text-gray-500 text-sm">{car.brandName}</p>
                     </div>
@@ -286,7 +294,7 @@ const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavori
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            {formatVND(car.dailyRate)}
+                            {formatVND(car.rentalPricePerDay || car.dailyRate)}
                         </span>
                         <span className="text-gray-500 text-sm ml-1">/ngày</span>
                     </div>
@@ -303,7 +311,7 @@ const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavori
                 <div className="grid grid-cols-2 gap-3 mb-6">
                     <div className="flex items-center justify-center bg-gray-50 rounded-lg py-2 px-1">
                         <FaUsers className="text-blue-500 mr-1 text-sm" />
-                        <span className="text-xs font-medium text-gray-700">{car.numOfSeats || 5} chỗ</span>
+                        <span className="text-xs font-medium text-gray-700">{car.seats || car.numOfSeats || 5} chỗ</span>
                     </div>
                     <div className="flex items-center justify-center bg-gray-50 rounded-lg py-2 px-1">
                         <FaCog className="text-green-500 mr-1 text-sm" />

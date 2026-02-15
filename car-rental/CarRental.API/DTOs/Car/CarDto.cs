@@ -22,6 +22,7 @@ public class CarDto
     public string? Location { get; set; }
     public int NumOfTrip { get; set; }
     public decimal Rating { get; set; }
+    public decimal AverageRating { get; set; }
     public List<string> ImageUrls { get; set; } = new();
     public DateTime CreatedAt { get; set; }
 }
@@ -39,6 +40,7 @@ public class CarListDto
     public string? Location { get; set; }
     public string? RegionName { get; set; }
     public decimal Rating { get; set; }
+    public decimal AverageRating { get; set; }
     public int NumOfTrip { get; set; }
     public string? ThumbnailUrl { get; set; }
     public string? FuelTypeName { get; set; }

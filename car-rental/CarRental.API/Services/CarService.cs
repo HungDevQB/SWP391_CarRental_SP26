@@ -187,8 +187,13 @@ public class CarService : ICarService
         RegionId = c.RegionId,
         RegionName = c.Region?.RegionName,
         Location = null,
-        NumOfTrip = 0,
-        Rating = 0,
+        NumOfTrip = c.Ratings?.Count(r => !r.IsDeleted) ?? 0,
+        Rating = c.Ratings != null && c.Ratings.Any(r => !r.IsDeleted)
+            ? (decimal)c.Ratings.Where(r => !r.IsDeleted).Average(r => (double)r.RatingScore)
+            : 0,
+        AverageRating = c.Ratings != null && c.Ratings.Any(r => !r.IsDeleted)
+            ? (decimal)c.Ratings.Where(r => !r.IsDeleted).Average(r => (double)r.RatingScore)
+            : 0,
         ImageUrls = c.Images.Select(i => i.ImageUrl).ToList(),
         CreatedAt = c.CreatedAt
     };
@@ -205,8 +210,13 @@ public class CarService : ICarService
         Status = c.Status?.StatusName ?? "available",
         Location = null,
         RegionName = c.Region?.RegionName,
-        Rating = 0,
-        NumOfTrip = 0,
+        Rating = c.Ratings != null && c.Ratings.Any(r => !r.IsDeleted)
+            ? (decimal)c.Ratings.Where(r => !r.IsDeleted).Average(r => (double)r.RatingScore)
+            : 0,
+        AverageRating = c.Ratings != null && c.Ratings.Any(r => !r.IsDeleted)
+            ? (decimal)c.Ratings.Where(r => !r.IsDeleted).Average(r => (double)r.RatingScore)
+            : 0,
+        NumOfTrip = c.Ratings?.Count(r => !r.IsDeleted) ?? 0,
         ThumbnailUrl = c.Images.FirstOrDefault()?.ImageUrl,
         FuelTypeName = c.FuelType?.FuelTypeName
     };

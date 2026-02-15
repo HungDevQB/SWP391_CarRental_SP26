@@ -31,6 +31,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
             .Include(c => c.Region)
             .Include(c => c.Status)
             .Include(c => c.Images)
+            .Include(c => c.Ratings)
             .AsQueryable();
 
         if (regionId.HasValue) query = query.Where(c => c.RegionId == regionId);
