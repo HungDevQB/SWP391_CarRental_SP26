@@ -1,3 +1,4 @@
+// ChatHub - SignalR hub for real-time messaging
 using CarRental.API.DTOs.Chat;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
