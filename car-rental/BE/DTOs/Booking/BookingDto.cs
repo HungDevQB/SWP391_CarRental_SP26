@@ -41,3 +41,18 @@ public class BookingListDto
     public int StatusId { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class BookingRatingRequest
+{
+    public int BookingId { get; set; }
+    public int Rating { get; set; }
+    public string? Comment { get; set; }
+}
+
+public class BookingRatingDto
+{
+    public int BookingId { get; set; }
+    public int Rating { get; set; }
+    public string? Comment { get; set; }
+    public DateTime RatedAt { get; set; }
+}
