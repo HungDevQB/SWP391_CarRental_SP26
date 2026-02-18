@@ -1,3 +1,4 @@
+// BookingController - REST API endpoints for booking management
 using CarRental.API.DTOs.Booking;
 using CarRental.API.DTOs.Common;
 using CarRental.API.Services.Interfaces;
