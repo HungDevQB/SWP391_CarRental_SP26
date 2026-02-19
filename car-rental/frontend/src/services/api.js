@@ -117,11 +117,10 @@ export const handleGoogleLoginCallback = () => {
 export const login = async (username, password) => {
     if (!username || !password) throw new Error('Vui lòng cung cấp tên đăng nhập và mật khẩu');
     try {
-        console.log('[API] Attempting login for username:', username);
         const response = await api.post('/api/auth/login', { email: username, password });
-        return response.data;
+        // Backend wraps response in ApiResponse<AuthResponse> → { success, data: { token, role, ... } }
+        return response.data?.data ?? response.data;
     } catch (error) {
-        console.error('[API] Login error:', error);
         throw error;
     }
 };
