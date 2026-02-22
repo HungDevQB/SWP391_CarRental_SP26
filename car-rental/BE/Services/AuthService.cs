@@ -1,3 +1,4 @@
+// AuthService - login, register, OTP and Google OAuth logic
 using CarRental.API.Data;
 using CarRental.API.DTOs.Auth;
 using CarRental.API.Models;
