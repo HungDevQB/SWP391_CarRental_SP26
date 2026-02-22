@@ -1,3 +1,4 @@
+// SearchPage - car search with filters and pagination
 "use client"
 import { formatVND } from '@/utils/format';
 import { useState, useEffect } from "react"
