@@ -1,3 +1,4 @@
+// ChatService - message handling and chat room management
 using CarRental.API.Data;
 using CarRental.API.DTOs.Chat;
 using CarRental.API.Models;
