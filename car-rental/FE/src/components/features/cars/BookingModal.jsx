@@ -1,3 +1,4 @@
+// BookingModal - car booking form with date picker and availability check
 "use client"
 
 import { useState, useEffect } from "react"
