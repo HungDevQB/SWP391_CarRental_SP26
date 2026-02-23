@@ -795,28 +795,52 @@ const PaymentPage = () => {
           deliveryRequested: deliveryRequested || false,
           paymentType: paymentType,
         }
-        endpoint = "/api/payments"
-        
+        endpoint = "/api/payment"
+
       } else if (bookingInfo && !bookingId) {
-        // Trường hợp tạo booking mới - sử dụng /api/payments/with-booking
-        paymentType = 'deposit'; // Chỉ cho phép deposit khi tạo booking mới
-        
-        paymentData = {
+        // Tạo booking mới trước, sau đó xử lý thanh toán
+        const createdBooking = await post('/api/bookings', {
           carId: bookingInfo.carId,
-          pickupDateTime: bookingInfo.pickupDateTime,
-          dropoffDateTime: bookingInfo.dropoffDateTime,
+          startDate: bookingInfo.pickupDateTime,
+          endDate: bookingInfo.dropoffDateTime,
           pickupLocation: bookingInfo.pickupLocation,
           dropoffLocation: bookingInfo.dropoffLocation,
-          seatNumber: bookingInfo.seatNumber,
-          withDriver: bookingInfo.withDriver || false,
-          deliveryRequested: bookingInfo.deliveryRequested || false,
-          amount: amountToPay,
-          currency: "VND",
           paymentMethod: paymentMethod,
-          customerInfo: customerInfo,
-          paymentType: paymentType,
+        })
+        const newBookingId = createdBooking.bookingId
+
+        if (paymentMethod === 'stripe') {
+          setStripeBookingId(newBookingId)
+          setShowStripeForm(true)
+          setIsProcessing(false)
+          return
         }
-        endpoint = "/api/payments/with-booking"
+
+        // Cash / các hình thức khác: booking đã tạo, trả tiền khi nhận xe
+        localStorage.removeItem("lastBookingId")
+        localStorage.removeItem("lastPriceBreakdown")
+        localStorage.removeItem("lastBookingInfo")
+        localStorage.removeItem("lastCustomerInfo")
+        setPaymentStatus("success")
+        showToast("Đặt xe thành công!", "success")
+        setTimeout(() => {
+          navigate("/booking-success", {
+            state: {
+              bookingId: newBookingId,
+              amount: 0,
+              priceBreakdown,
+              totalAmount: priceBreakdown?.total || 0,
+              withDriver,
+              deliveryRequested,
+              customerInfo,
+              bookingInfo,
+              depositAmount,
+              collateralAmount,
+              paymentType: 'cash',
+            }
+          })
+        }, 1500)
+        return
       } else {
         // Trường hợp chỉ có bookingId (fallback)
         paymentData = {
@@ -829,17 +853,15 @@ const PaymentPage = () => {
           deliveryRequested: deliveryRequested || false,
           paymentType: pickupPayment ? 'full_payment' : undefined,
         }
-        endpoint = "/api/payments"
+        endpoint = "/api/payment"
       }
 
       console.log("🔍 [DEBUG] Final paymentType:", paymentType);
       console.log("🔍 [DEBUG] Using endpoint:", endpoint);
 
-      // Stripe: tạo booking trước rồi show Stripe form
+      // Stripe: dùng bookingId đã có, để StripePayment component tự tạo intent
       if (paymentMethod === "stripe") {
-        const bookingResponse = await post(endpoint, { ...paymentData, paymentMethod: "stripe" });
-        const createdBookingId = bookingResponse.bookingId || bookingId;
-        setStripeBookingId(createdBookingId);
+        setStripeBookingId(Number.parseInt(bookingId));
         setShowStripeForm(true);
         setIsProcessing(false);
         return;
@@ -890,8 +912,14 @@ const PaymentPage = () => {
       // Ưu tiên lấy message tiếng Việt từ backend nếu có
       const backendMessage = err.response?.data?.message || err.response?.data?.error || err.response?.data;
       if (err.response?.status === 401) {
+        // Clear stale token so user must re-login
+        localStorage.removeItem('token')
+        localStorage.removeItem('expiresAt')
+        localStorage.removeItem('role')
+        localStorage.removeItem('username')
+        localStorage.removeItem('userId')
         setError("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.")
-        setTimeout(() => navigate("/login"), 2000)
+        setTimeout(() => navigate("/login?redirectTo=/payment"), 2000)
       } else if (err.response?.status === 400) {
         setError(backendMessage || "Dữ liệu thanh toán không hợp lệ")
       } else if (err.response?.status === 409) {

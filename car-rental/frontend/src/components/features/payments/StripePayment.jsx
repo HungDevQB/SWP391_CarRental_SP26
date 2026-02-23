@@ -68,10 +68,16 @@ export default function StripePayment({ bookingId, amount, onSuccess, onError })
     setLoading(true);
     try {
       const res = await api.post('/api/payment/stripe/create-intent', { bookingId, amount });
-      setClientSecret(res.data?.data?.clientSecret || '');
+      setClientSecret(res.data?.clientSecret || '');
       setInitiated(true);
     } catch (err) {
-      onError?.('Không thể khởi tạo thanh toán');
+      if (err.response?.status === 401) {
+        ['token', 'expiresAt', 'role', 'username', 'userId'].forEach(k => localStorage.removeItem(k));
+        onError?.('Phiên đăng nhập hết hạn. Đang chuyển đến trang đăng nhập...');
+        setTimeout(() => { window.location.href = '/login?redirectTo=/payment'; }, 2000);
+      } else {
+        onError?.('Không thể khởi tạo thanh toán Stripe. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }

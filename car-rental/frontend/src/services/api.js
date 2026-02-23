@@ -57,6 +57,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => {
         console.log('[API Response]', response.status, response.config.url, response.data);
+        // Auto-unwrap ApiResponse<T> = { success, data, message, statusCode }
+        if (
+            response.data &&
+            typeof response.data === 'object' &&
+            'success' in response.data &&
+            'data' in response.data
+        ) {
+            response.data = response.data.data;
+        }
         return response;
     },
     (error) => {
@@ -69,13 +78,13 @@ api.interceptors.response.use(
         
         if (error.response?.status === 401) {
             const existingToken = getItem('token');
-            // Chỉ redirect khi có token nhưng bị hết hạn, không redirect khi chưa đăng nhập
-            if (existingToken && isTokenExpired()) {
-                const publicPaths = ['/', '/cars', '/car-detail', '/login', '/register'];
+            // Redirect khi có token nhưng bị từ chối (hết hạn HOẶC không hợp lệ với backend mới)
+            if (existingToken) {
+                const publicPaths = ['/', '/cars', '/car-detail', '/login', '/register', '/search', '/bookings/confirmation'];
                 const isPublicPage = publicPaths.some(p =>
                     window.location.pathname === p || window.location.pathname.startsWith(p + '/')
                 );
-                if (!isPublicPage && !window.location.pathname.includes('/payment/')) {
+                if (!isPublicPage && !window.location.pathname.startsWith('/payment')) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('expiresAt');
                     localStorage.removeItem('role');
@@ -174,7 +183,7 @@ export const changePassword = async (currentPassword, newPassword) => {
     console.log('🔐 Change password payload:', payload);
 
     try {
-        const response = await api.post('/api/users/change-password', payload);
+        const response = await api.post('/api/auth/change-password', payload);
         console.log('✅ Change password success:', response.data);
         return response.data;
     } catch (error) {
@@ -219,9 +228,9 @@ export const logout = async () => {
 export const getProfile = async () => {
     try {
         console.log('🔄 Fetching user profile...');
-        const response = await api.get('/api/users/profile');
+        const response = await api.get('/api/users/me');
         console.log('✅ Profile fetched successfully:', response.data);
-        return response.data;
+        return response.data?.data ?? response.data;
     } catch (error) {
         console.error('❌ Profile fetch error:', {
             status: error.response?.status,
@@ -250,7 +259,7 @@ export const updateProfile = async (userData) => {
     if (!userData) throw new Error('Vui lòng cung cấp dữ liệu cập nhật');
     
     try {
-        const response = await api.put('/api/users/profile', userData);
+        const response = await api.put('/api/users/me', userData);
         return response.data;
     } catch (error) {
         if (error && error.stack) {
@@ -336,7 +345,7 @@ export const toggleUserStatus = async (userId, reason = null) => {
         console.log("Request body:", requestBody);
         console.log("API URL:", `/api/users/${userId}/toggle-status`);
         
-        const response = await api.put(`/api/users/${userId}/toggle-status`, requestBody, {
+        const response = await api.patch(`/api/users/${userId}/toggle-active`, requestBody, {
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -373,11 +382,10 @@ export const getFavorites = async () => {
     }
 };
 
-export const addFavorite = async (carId, supplierId) => {
+export const addFavorite = async (carId) => {
     if (!carId) throw new Error('Vui lòng cung cấp ID xe');
-    if (!supplierId) throw new Error('Vui lòng cung cấp ID chủ xe');
     try {
-        const response = await api.post('/api/favorites', { carId, supplierId });
+        const response = await api.post('/api/favorites/toggle', { carId });
         invalidateCache('favorites');
         return response.data;
     } catch (error) {
@@ -385,10 +393,10 @@ export const addFavorite = async (carId, supplierId) => {
     }
 };
 
-export const removeFavorite = async (favoriteId) => {
-    if (!favoriteId) throw new Error('Vui lòng cung cấp ID yêu thích');
+export const removeFavorite = async (carId) => {
+    if (!carId) throw new Error('Vui lòng cung cấp ID xe');
     try {
-        const response = await api.delete(`/api/favorites/${favoriteId}`);
+        const response = await api.post('/api/favorites/toggle', { carId });
         invalidateCache('favorites');
         return response.data;
     } catch (error) {
@@ -426,8 +434,8 @@ export const searchCars = async (filters = {}, page = 0, size = 10) => {
             params.dropoffDateTime = filters.dropoffDateTime;
         }
 
-        const response = await api.get('/api/cars/search', { params });
-        return response.data;
+        const response = await api.get('/api/cars/filter', { params });
+        return response.data?.data ?? response.data;
     } catch (error) {
         if (error.message.includes('CORS')) return { content: [] };
         throw new Error(error.response?.data?.message || 'Tìm kiếm xe thất bại');
@@ -438,7 +446,16 @@ export const getCarById = async (carId) => {
     if (!carId) throw new Error('Vui lòng cung cấp ID xe');
     try {
         const response = await api.get(`/api/cars/${carId}`);
-        return response.data;
+        const car = response.data;
+        if (!car) return car;
+        // Normalize field names for frontend compatibility
+        return {
+            ...car,
+            model: car.model || car.carModel,
+            dailyRate: car.dailyRate || car.rentalPricePerDay,
+            // imageUrls is array of strings; expose as images array of objects for legacy UI
+            images: car.images || (car.imageUrls || []).map(url => ({ imageUrl: url })),
+        };
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy thông tin xe thất bại');
     }
@@ -632,7 +649,7 @@ export const confirmBooking = async (bookingData) => {
 export const getBookingFinancials = async (bookingId) => {
     if (!bookingId) throw new Error('Vui lòng cung cấp ID đặt xe');
     try {
-        const response = await api.get(`/api/bookings/${bookingId}/financials`);
+        const response = await api.get(`/api/bookings/${bookingId}/financial`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy thông tin tài chính thất bại');
@@ -663,7 +680,7 @@ export const updateBooking = async (bookingId, bookingData) => {
 export const cancelBooking = async (bookingId) => {
     if (!bookingId) throw new Error('Thiếu bookingId');
     try {
-        const response = await api.put(`/api/bookings/${bookingId}/cancel`);
+        const response = await api.post(`/api/bookings/${bookingId}/cancel`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.error || error.response?.data?.message || 'Không thể hủy booking');
@@ -708,7 +725,7 @@ export const getActivePromotions = async () => {
 // Stripe payment
 export const createStripePaymentIntent = async (bookingId, amount) => {
     const response = await api.post('/api/payment/stripe/create-intent', { bookingId, amount });
-    return response.data?.data;
+    return response.data;
 };
 
 export const confirmStripePayment = async (bookingId, paymentIntentId) => {
@@ -839,7 +856,7 @@ export const getSimilarCarsAdvanced = async (carId, page = 0, size = 4) => {
 export const testAuth = async () => {
     try {
         console.log('🧪 Testing authentication...');
-        const response = await api.get('/api/users/profile');
+        const response = await api.get('/api/users/me');
         console.log('✅ Auth test successful:', response.data);
         return response.data;
     } catch (error) {
@@ -859,25 +876,9 @@ export const getUserBookingHistory = async () => {
         console.log('🔄 Fetching user booking history...');
         
         // ✅ SỬA: Gọi endpoint UserController thay vì BookingController
-        const response = await api.get('/api/users/profile/bookings');
+        const response = await api.get('/api/bookings/my-bookings');
         
         console.log('✅ Booking history fetched successfully:', response.data);
-        
-        // ✅ Debug payment info
-        if (response.data.success && response.data.data) {
-            console.log(`📊 Total bookings: ${response.data.total}`);
-            response.data.data.forEach((booking, index) => {
-                console.log(`📋 Booking ${index + 1}:`, {
-                    bookingId: booking.bookingId,
-                    carModel: booking.carModel,
-                    statusName: booking.statusName,
-                    paymentStatus: booking.paymentStatus,
-                    paymentType: booking.paymentType,
-                    paymentAmount: booking.paymentAmount,
-                    paymentDate: booking.paymentDate
-                });
-            });
-        }
         
         return response.data;
     } catch (error) {
@@ -947,16 +948,6 @@ export const getBookingDetails = async (bookingId) => {
         
         const response = await api.get(`/api/bookings/${bookingId}`);
         console.log('✅ Booking details fetched:', response.data);
-        if (response.data.success && response.data.data) {
-            const booking = response.data.data;
-            console.log('💰 Booking details payment info:', {
-                bookingId: booking.bookingId,
-                paymentStatus: booking.paymentStatus,
-                paymentType: booking.paymentType,
-                paymentAmount: booking.paymentAmount,
-                paymentDate: booking.paymentDate
-            });
-        }
         return response.data;
     } catch (error) {
         console.error('❌ Fetch booking details error:', {
@@ -1005,15 +996,15 @@ export const filterCars = (filters, page = 0, size = 9, sortBy = "") => {
 export const findCars = async (searchQuery, page = 0, size = 9) => {
     try {
         const token = getToken();
-        const response = await api.get('/api/cars/search/keyword', {
+        const response = await api.get('/api/cars/filter', {
             params: {
-                searchQuery,
+                keyword: searchQuery,
                 page,
                 size
             },
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        return response.data;
+        return response.data?.data ?? response.data;
     } catch (error) {
         console.error('Error searching cars:', error);
         throw new Error(error.response?.data?.message || 'Tìm kiếm xe thất bại');
@@ -1237,20 +1228,8 @@ export const getCustomersOfSupplier = async (supplierId) => {
 
 // Rating APIs
 export const getAllRatings = async () => {
-    const cacheKey = 'all-ratings';
-    if (cache.has(cacheKey)) {
-        return cache.get(cacheKey);
-    }
-    
-    try {
-        const response = await api.get('/api/ratings');
-        cache.set(cacheKey, response.data);
-        setTimeout(() => cache.delete(cacheKey), 60000); // Cache 1 phút
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching all ratings:', error);
-        throw new Error(error.response?.data?.message || 'Không thể tải danh sách đánh giá');
-    }
+    // Backend does not have GET /api/ratings; return empty array
+    return [];
 };
 
 export const getRatingsByCarId = async (carId) => {
@@ -1260,7 +1239,7 @@ export const getRatingsByCarId = async (carId) => {
     }
     
     try {
-        const response = await api.get(`/api/ratings?carId=${carId}`);
+        const response = await api.get(`/api/ratings/car/${carId}`);
         cache.set(cacheKey, response.data);
         setTimeout(() => cache.delete(cacheKey), 30000); // Cache 30 giây
         return response.data;
@@ -1300,7 +1279,7 @@ export const updateRating = async (ratingId, ratingData) => {
 
 export const getRatingSummaryByCarId = async (carId) => {
     try {
-        const response = await api.get(`/api/ratings/summary?carId=${carId}`);
+        const response = await api.get(`/api/ratings/car/${carId}/average`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching rating summary for car ${carId}:`, error);
@@ -1440,13 +1419,8 @@ export const getPayoutAmount = async (bookingId) => {
 };
 
 export const getRatingsByBookingId = async (bookingId) => {
-    if (!bookingId) throw new Error('Vui lòng cung cấp bookingId');
-    try {
-        const response = await api.get(`/api/ratings?bookingId=${bookingId}`);
-        return response.data;
-    } catch (error) {
-        throw new Error(error.response?.data?.message || 'Không thể lấy đánh giá theo booking');
-    }
+    // Backend does not have a by-booking endpoint; return empty
+    return [];
 };
 
 export default api;

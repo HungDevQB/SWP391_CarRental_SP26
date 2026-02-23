@@ -10,10 +10,10 @@ namespace CarRental.API.Security;
 
 public static class AuthenticationExtensions
 {
-    private const string JwtSecret = "Th1s1sAS3cur3K3yF0rJWT2025!@#";
-
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration config)
     {
+        var jwtSecret = config["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secret not configured");
+
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -24,7 +24,7 @@ public static class AuthenticationExtensions
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
                 ValidateIssuer = true,
                 ValidIssuer = "CarRentalAPI",
                 ValidateAudience = true,

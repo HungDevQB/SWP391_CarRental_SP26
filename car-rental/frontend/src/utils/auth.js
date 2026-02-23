@@ -33,5 +33,5 @@ export const isTokenExpired = () => {
 };
 
 export function getItem(key) {
-  return localStorage.getItem(key) || sessionStorage.getItem(key);
-} 
+  return localStorage.getItem(key);
+}
