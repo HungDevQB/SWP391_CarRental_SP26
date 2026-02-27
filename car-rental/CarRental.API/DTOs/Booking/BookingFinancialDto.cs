@@ -2,15 +2,8 @@ namespace CarRental.API.DTOs.Booking;
 
 public class BookingFinancialDto
 {
-    public int BookingFinancialId { get; set; }
     public int BookingId { get; set; }
-    public decimal BasePrice { get; set; }
-    public decimal InsuranceFee { get; set; }
-    public decimal ServiceFee { get; set; }
-    public decimal DriverFee { get; set; }
     public decimal DiscountAmount { get; set; }
-    public decimal Subtotal { get; set; }
-    public decimal TaxAmount { get; set; }
     public decimal TotalPrice { get; set; }
 }
 

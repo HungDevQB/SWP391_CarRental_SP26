@@ -339,8 +339,7 @@ const SupplierOrderManagement = () => {
     } else {
       try {
         const res = await getBookingDetails(order.bookingId);
-        const bookingData = res.data?.paymentDetails ? res.data : res.data?.data;
-        setSelectedPaymentOrder({ ...order, paymentDetails: bookingData?.paymentDetails || [] });
+        setSelectedPaymentOrder({ ...order, paymentDetails: res?.paymentDetails || [] });
         setShowPaymentModal(true);
       } catch (err) {
         toast.error('Không thể lấy chi tiết thanh toán');

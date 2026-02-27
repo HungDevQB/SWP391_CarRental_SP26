@@ -88,6 +88,7 @@ const LoginRegisterPage = () => {
         role: userRole,
         username: response.username || data.username,
         email: response.email || data.username,
+        userId: response.userId,
         rememberMe
       });
       localStorage.setItem('userEmail', response.email || data.username);

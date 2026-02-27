@@ -13,14 +13,42 @@ public class Contract
     [Column("booking_id")]
     public int BookingId { get; set; }
 
-    [Column("contract_content")]
-    public string? ContractContent { get; set; }
+    [Required]
+    [MaxLength(50)]
+    [Column("contract_code")]
+    public string ContractCode { get; set; } = string.Empty;
 
-    [Column("signed_by_customer")]
-    public bool SignedByCustomer { get; set; } = false;
+    [Column("customer_id")]
+    public int CustomerId { get; set; }
 
-    [Column("signed_by_supplier")]
-    public bool SignedBySupplier { get; set; } = false;
+    [Column("supplier_id")]
+    public int SupplierId { get; set; }
+
+    [Column("car_id")]
+    public int CarId { get; set; }
+
+    [Column("driver_id")]
+    public int DriverId { get; set; }
+
+    [Column("start_date")]
+    public DateOnly StartDate { get; set; }
+
+    [Column("end_date")]
+    public DateOnly EndDate { get; set; }
+
+    [Column("terms_and_conditions")]
+    public string? TermsAndConditions { get; set; }
+
+    [MaxLength(255)]
+    [Column("customer_signature")]
+    public string? CustomerSignature { get; set; }
+
+    [MaxLength(255)]
+    [Column("supplier_signature")]
+    public string? SupplierSignature { get; set; }
+
+    [Column("contract_status_id")]
+    public int ContractStatusId { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -30,6 +58,16 @@ public class Contract
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
+
+    // Properties not in DB — kept for code compatibility
+    [NotMapped]
+    public string? ContractContent { get; set; }
+
+    [NotMapped]
+    public bool SignedByCustomer { get; set; } = false;
+
+    [NotMapped]
+    public bool SignedBySupplier { get; set; } = false;
 
     // Navigation
     [ForeignKey("BookingId")]

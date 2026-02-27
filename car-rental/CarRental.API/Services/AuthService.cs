@@ -55,12 +55,14 @@ public class AuthService : IAuthService
 
         var user = new User
         {
+            Username = request.Email, // Use email as username since DB requires it
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             FullName = request.FullName,
-            Phone = request.Phone,
-            CountryCode = request.CountryCode,
+            Phone = request.Phone ?? string.Empty,
+            CountryCode = request.CountryCode ?? "+84",
             RoleId = role.RoleId,
+            StatusId = 1,
             LoginSource = "local",
             IsActive = true
         };

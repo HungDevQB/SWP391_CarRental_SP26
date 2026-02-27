@@ -10,42 +10,70 @@ public class Driver
     [Column("driver_id")]
     public int DriverId { get; set; }
 
-    [Column("user_id")]
-    public int UserId { get; set; }
+    [Column("supplier_id")]
+    public int SupplierId { get; set; }
 
-    [MaxLength(50)]
+    [Required]
+    [MaxLength(100)]
+    [Column("driver_name")]
+    public string DriverName { get; set; } = string.Empty;
+
+    [Column("dob")]
+    public DateOnly Dob { get; set; }
+
+    [MaxLength(200)]
+    [Column("address")]
+    public string Address { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    [Column("phone")]
+    public string Phone { get; set; } = string.Empty;
+
+    [MaxLength(4)]
+    [Column("country_code")]
+    public string CountryCode { get; set; } = string.Empty;
+
+    [MaxLength(20)]
     [Column("license_number")]
     public string? LicenseNumber { get; set; }
 
-    [MaxLength(50)]
+    [MaxLength(5)]
     [Column("license_type")]
     public string? LicenseType { get; set; }
 
     [Column("experience_years")]
     public int? ExperienceYears { get; set; }
 
-    [MaxLength(1000)]
-    [Column("description")]
-    public string? Description { get; set; }
+    [Column("license_expiry_date")]
+    public DateOnly? LicenseExpiryDate { get; set; }
 
-    [MaxLength(20)]
-    [Column("availability_status")]
-    public string AvailabilityStatus { get; set; } = "available";
-
-    [Column("rating", TypeName = "decimal(3,2)")]
-    public decimal Rating { get; set; } = 0;
+    [Column("status_id")]
+    public int? StatusId { get; set; }
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
 
-    [Column("created_at")]
+    // Properties not in DB — kept for code compatibility
+    [NotMapped]
+    public int UserId { get; set; }
+
+    [NotMapped]
+    public string? Description { get; set; }
+
+    [NotMapped]
+    public string AvailabilityStatus { get; set; } = "available";
+
+    [NotMapped]
+    public decimal Rating { get; set; } = 0;
+
+    [NotMapped]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("updated_at")]
+    [NotMapped]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
-    [ForeignKey("UserId")]
+    [ForeignKey("SupplierId")]
     public User? User { get; set; }
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

@@ -15,6 +15,10 @@ public class CarBrand
     [Column("brand_name")]
     public string BrandName { get; set; } = string.Empty;
 
+    [MaxLength(50)]
+    [Column("country")]
+    public string? Country { get; set; }
+
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
 

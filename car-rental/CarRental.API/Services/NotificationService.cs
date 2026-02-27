@@ -19,13 +19,14 @@ public class NotificationService : INotificationService
 
     public async Task SendAsync(int userId, string message, string? type = null, int? entityId = null, string? entityType = null)
     {
+        // type must be one of: 'email', 'in_app', 'chatbox'
+        var validType = type is "email" or "in_app" or "chatbox" ? type : "in_app";
         var notification = new Notification
         {
             UserId = userId,
             Message = message,
-            Type = type,
-            RelatedEntityId = entityId,
-            RelatedEntityType = entityType
+            Type = validType,
+            StatusId = 1
         };
         await _notificationRepo.AddAsync(notification);
         await _notificationRepo.SaveChangesAsync();
@@ -40,9 +41,6 @@ public class NotificationService : INotificationService
             UserId = n.UserId,
             Message = n.Message,
             Type = n.Type,
-            IsRead = n.IsRead,
-            RelatedEntityId = n.RelatedEntityId,
-            RelatedEntityType = n.RelatedEntityType,
             CreatedAt = n.CreatedAt
         });
     }

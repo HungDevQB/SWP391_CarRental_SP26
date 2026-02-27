@@ -14,23 +14,16 @@ public class Notification
     public int UserId { get; set; }
 
     [Required]
-    [MaxLength(1000)]
+    [MaxLength(500)]
     [Column("message")]
     public string Message { get; set; } = string.Empty;
 
-    [MaxLength(50)]
+    [MaxLength(20)]
     [Column("type")]
-    public string? Type { get; set; }
+    public string Type { get; set; } = "in_app";
 
-    [Column("is_read")]
-    public bool IsRead { get; set; } = false;
-
-    [Column("related_entity_id")]
-    public int? RelatedEntityId { get; set; }
-
-    [MaxLength(50)]
-    [Column("related_entity_type")]
-    public string? RelatedEntityType { get; set; }
+    [Column("status_id")]
+    public int StatusId { get; set; } = 1;
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;

@@ -12,13 +12,13 @@ public class RatingRepository : BaseRepository<Rating>, IRatingRepository
     public async Task<IEnumerable<Rating>> GetByCarAsync(int carId) =>
         await _dbSet.Include(r => r.Customer)
                     .Where(r => r.CarId == carId)
-                    .OrderByDescending(r => r.CreatedAt)
+                    .OrderByDescending(r => r.RatingDate)
                     .ToListAsync();
 
     public async Task<decimal> GetAverageRatingAsync(int carId)
     {
         var ratings = await _dbSet.Where(r => r.CarId == carId).ToListAsync();
-        return ratings.Any() ? ratings.Average(r => r.RatingScore) : 0;
+        return ratings.Any() ? (decimal)ratings.Average(r => r.RatingScore) : 0;
     }
 
     public async Task<Rating?> GetByBookingAsync(int bookingId) =>

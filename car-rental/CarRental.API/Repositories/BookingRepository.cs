@@ -26,6 +26,7 @@ public class BookingRepository : BaseRepository<Booking>, IBookingRepository
             .Include(b => b.Car).ThenInclude(c => c!.CarBrand)
             .Include(b => b.Car).ThenInclude(c => c!.Images)
             .Include(b => b.Status)
+            .Include(b => b.BookingFinancial)
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -41,6 +42,7 @@ public class BookingRepository : BaseRepository<Booking>, IBookingRepository
             .Include(b => b.Car)
             .Include(b => b.Customer)
             .Include(b => b.Status)
+            .Include(b => b.BookingFinancial)
             .Where(b => b.Car != null && b.Car.SupplierId == supplierId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -51,6 +53,7 @@ public class BookingRepository : BaseRepository<Booking>, IBookingRepository
             .Include(b => b.Customer)
             .Include(b => b.Car).ThenInclude(c => c!.CarBrand)
             .Include(b => b.Status)
+            .Include(b => b.BookingFinancial)
             .AsQueryable();
 
         if (statusId.HasValue)

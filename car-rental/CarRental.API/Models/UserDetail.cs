@@ -45,6 +45,10 @@ public class UserDetail
     [Column("driving_license_back_image")]
     public string? DrivingLicenseBackImage { get; set; }
 
+    [MaxLength(500)]
+    [Column("avatar")]
+    public string? Avatar { get; set; }
+
     [Column("is_verified")]
     public bool IsVerified { get; set; } = false;
 

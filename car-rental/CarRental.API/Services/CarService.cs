@@ -32,7 +32,7 @@ public class CarService : ICarService
             req.RegionId, req.Location, req.StartDate, req.EndDate,
             req.Seats, req.Transmission, req.FuelTypeId, req.CarBrandId,
             req.MinPrice, req.MaxPrice, req.Year,
-            req.SortBy, sortDesc, req.Page, req.Size);
+            req.SortBy, sortDesc, req.Page, req.Size, req.Keyword);
 
         var dtos = items.Select(MapToListDto).ToList();
         return PageResponse<CarListDto>.Create(dtos, req.Page, req.Size, total);

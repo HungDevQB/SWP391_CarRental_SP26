@@ -10,36 +10,28 @@ public class User
     [Column("user_id")]
     public int UserId { get; set; }
 
-    [Column("role_id")]
-    public int RoleId { get; set; }
-
-    [Required]
-    [MaxLength(100)]
-    [Column("email")]
-    public string Email { get; set; } = string.Empty;
-
-    [MaxLength(20)]
-    [Column("phone")]
-    public string? Phone { get; set; }
-
-    [MaxLength(10)]
-    [Column("country_code")]
-    public string? CountryCode { get; set; }
+    [MaxLength(50)]
+    [Column("username")]
+    public string? Username { get; set; }
 
     [MaxLength(255)]
     [Column("password_hash")]
     public string? PasswordHash { get; set; }
 
+    [Column("role_id")]
+    public int RoleId { get; set; }
+
     [MaxLength(100)]
-    [Column("full_name")]
-    public string? FullName { get; set; }
+    [Column("email")]
+    public string? Email { get; set; }
 
-    [MaxLength(500)]
-    [Column("avatar_url")]
-    public string? AvatarUrl { get; set; }
+    [MaxLength(20)]
+    [Column("phone")]
+    public string? Phone { get; set; }
 
-    [Column("is_active")]
-    public bool IsActive { get; set; } = true;
+    [MaxLength(4)]
+    [Column("country_code")]
+    public string? CountryCode { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -47,8 +39,30 @@ public class User
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [MaxLength(50)]
-    [Column("login_source")]
+    [Column("last_login")]
+    public DateTime? LastLogin { get; set; }
+
+    [Column("status_id")]
+    public int StatusId { get; set; } = 1;
+
+    [MaxLength(2)]
+    [Column("preferred_language")]
+    public string? PreferredLanguage { get; set; }
+
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    // Properties not in DB — kept for code compatibility
+    [NotMapped]
+    public string? FullName { get; set; }
+
+    [NotMapped]
+    public string? AvatarUrl { get; set; }
+
+    [NotMapped]
+    public bool IsActive { get; set; } = true;
+
+    [NotMapped]
     public string? LoginSource { get; set; }
 
     // Navigation

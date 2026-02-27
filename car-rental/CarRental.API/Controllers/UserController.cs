@@ -1,8 +1,11 @@
+using CarRental.API.Data;
 using CarRental.API.DTOs.Common;
 using CarRental.API.DTOs.User;
+using CarRental.API.Services;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CarRental.API.Controllers;
 
@@ -12,11 +15,15 @@ namespace CarRental.API.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly CloudinaryService _cloudinary;
+    private readonly ApplicationDbContext _context;
     private int CurrentUserId => int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-    public UserController(IUserService userService)
+    public UserController(IUserService userService, CloudinaryService cloudinary, ApplicationDbContext context)
     {
         _userService = userService;
+        _cloudinary = cloudinary;
+        _context = context;
     }
 
     [HttpGet("me")]
@@ -110,5 +117,33 @@ public class UserController : ControllerBase
     {
         await _userService.SetPrimaryBankAccountAsync(CurrentUserId, accountId);
         return Ok(ApiResponse.OkNoData("Cập nhật thành công"));
+    }
+
+    [HttpPost("me/avatar")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(ApiResponse<object>.Fail("Vui lòng chọn file ảnh"));
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest(ApiResponse<object>.Fail("File quá lớn, tối đa 5MB"));
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            return BadRequest(ApiResponse<object>.Fail("Chỉ chấp nhận file ảnh JPG, PNG, WEBP"));
+
+        var url = await _cloudinary.UploadAvatarAsync(file, CurrentUserId);
+
+        var detail = await _context.UserDetails.FirstOrDefaultAsync(d => d.UserId == CurrentUserId);
+        if (detail == null)
+        {
+            detail = new CarRental.API.Models.UserDetail { UserId = CurrentUserId };
+            _context.UserDetails.Add(detail);
+        }
+        detail.Avatar = url;
+        await _context.SaveChangesAsync();
+
+        return Ok(ApiResponse<object>.Ok(new { avatarUrl = url }, "Cập nhật avatar thành công"));
     }
 }

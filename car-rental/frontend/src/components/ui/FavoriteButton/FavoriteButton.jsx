@@ -39,21 +39,17 @@ const FavoriteButton = ({ carId, supplierId, initialIsFavorite = false, initialF
             setIsLoading(true);
             setIsAnimating(true);
             if (isFavorite) {
-                // Remove from favorites using favoriteId
-                if (favoriteId) {
-                    await removeFavorite(favoriteId);
-                    setIsFavorite(false);
-                    setFavoriteId(null);
-                    toast.success('Đã xóa khỏi danh sách yêu thích');
-                    if (onFavoriteChange) {
-                        onFavoriteChange(false);
-                    }
-                } else {
-                    toast.error('Vui lòng cung cấp ID yêu thích');
+                // Remove from favorites using carId (backend uses toggle endpoint)
+                await removeFavorite(carId);
+                setIsFavorite(false);
+                setFavoriteId(null);
+                toast.success('Đã xóa khỏi danh sách yêu thích');
+                if (onFavoriteChange) {
+                    onFavoriteChange(false);
                 }
             } else {
                 // Add to favorites
-                const result = await addFavorite(carId, supplierId);
+                const result = await addFavorite(carId);
                 setIsFavorite(true);
                 setFavoriteId(result?.favoriteId || result?.id);
                 toast.success('Đã thêm vào danh sách yêu thích');

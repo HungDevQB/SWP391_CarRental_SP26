@@ -83,9 +83,13 @@ public static class AuthenticationExtensions
                         var customerRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == "customer");
                         user = new User
                         {
+                            Username = email, // Use email as username since DB requires it
                             Email = email,
                             FullName = name,
+                            Phone = string.Empty,
+                            CountryCode = "+84",
                             RoleId = customerRole?.RoleId ?? 3,
+                            StatusId = 1,
                             LoginSource = "google",
                             IsActive = true
                         };

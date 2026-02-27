@@ -193,7 +193,7 @@ const ServiceToggle = ({ icon: Icon, title, description, price, checked, onChang
             <div className="text-green-600 font-semibold text-sm mt-1">{price}</div>
           </div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
+        <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={checked}
@@ -245,8 +245,8 @@ const PageHeader = ({ currentStep = 2, backLink = "/search", backText = "Quay l�
 const CarInfoCard = ({ car, bookingData, rentalDays }) => {
   // Get car image with fallback logic
   const getCarImage = () => {
+    if (car.thumbnailUrl) return car.thumbnailUrl;
     if (car.images && car.images.length > 0) {
-      // Try url first, then imageUrl, then any other image property
       const firstImage = car.images[0];
       return firstImage.url || firstImage.imageUrl || firstImage.src || firstImage;
     }
@@ -263,7 +263,7 @@ const CarInfoCard = ({ car, bookingData, rentalDays }) => {
           <div className="relative aspect-[4/3] rounded-2xl overflow-hidden group w-full">
             <img
               src={carImage}
-              alt={`Xe ${car.model}`}
+              alt={`Xe ${car.carModel || car.model}`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -279,7 +279,7 @@ const CarInfoCard = ({ car, bookingData, rentalDays }) => {
           {/* Price below image */}
           <div className="mt-4 w-full flex flex-col items-start">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold text-2xl mb-2 shadow-lg">
-              {((car.dailyRate || car.daily_rate) / 1000).toFixed(0)}K/ngày
+              {(((car.rentalPricePerDay || car.dailyRate || car.daily_rate) || 0) / 1000).toFixed(0)}K/ngày
             </div>
             {/* Rental duration below price */}
             <div className="flex items-center text-gray-700 mt-2">
@@ -291,7 +291,7 @@ const CarInfoCard = ({ car, bookingData, rentalDays }) => {
         </div>
         {/* Right: Car details and trip details */}
         <div className="w-full lg:w-3/5">
-          <h3 className="text-3xl font-bold text-gray-800 mb-4">{car.model}</h3>
+          <h3 className="text-3xl font-bold text-gray-800 mb-4">{car.carModel || car.model}</h3>
           {/* Car Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
@@ -300,7 +300,7 @@ const CarInfoCard = ({ car, bookingData, rentalDays }) => {
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
               <div className="text-xs text-gray-500 mb-1">Số ghế</div>
-              <div className="font-bold text-gray-800">{car.numOfSeats || "-"}</div>
+              <div className="font-bold text-gray-800">{car.seats || car.numOfSeats || "-"}</div>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
               <div className="text-xs text-gray-500 mb-1">Năm SX</div>
@@ -670,20 +670,20 @@ const BookingConfirmationPage = () => {
         if (userProfile) {
           setContactInfo((prev) => ({
             ...prev,
-            fullName: userProfile.userDetail?.fullName || userProfile.username || "",
+            fullName: userProfile.fullName || userProfile.userDetail?.fullName || userProfile.username || "",
             phone: userProfile.phone || "",
             email: userProfile.email || "",
-            pickupAddress: prev.pickupAddress || userProfile.userDetail?.address || "",
-            dropoffAddress: prev.dropoffAddress || userProfile.userDetail?.address || "",
+            pickupAddress: prev.pickupAddress || userProfile.address || userProfile.userDetail?.address || "",
+            dropoffAddress: prev.dropoffAddress || userProfile.address || userProfile.userDetail?.address || "",
           }))
         }
       } catch (error) {
         if (user) {
           setContactInfo((prev) => ({
             ...prev,
-            fullName: user.fullName || user.username || "",
+            fullName: user.fullName || user.userDetail?.fullName || user.username || "",
             phone: user.phone || "",
-            email: user.email || "",
+            email: user.email || user.username || "",
           }))
         }
 
@@ -716,11 +716,9 @@ const BookingConfirmationPage = () => {
         setIsLoading(true)
         if (bookingData.car) {
           setCar(bookingData.car)
-          calculatePrice(bookingData.car.dailyRate || bookingData.car.daily_rate)
         } else {
           const carData = await getCarById(bookingData.carId)
           setCar(carData)
-          calculatePrice(carData.dailyRate || carData.daily_rate)
         }
       } catch (err) {
         setError("Không thể tải thông tin xe. Vui lòng thử lại.")
@@ -731,7 +729,14 @@ const BookingConfirmationPage = () => {
     }
 
     fetchCar()
-  }, [bookingData, navigate, withDriver, deliveryRequested])
+  }, [bookingData, navigate])
+
+  // Recalculate price when car, withDriver, or deliveryRequested changes
+  useEffect(() => {
+    if (!car) return
+    const rate = car.rentalPricePerDay || car.dailyRate || car.daily_rate
+    if (rate) calculatePrice(rate)
+  }, [car, withDriver, deliveryRequested])
 
   const calculatePrice = (dailyRate) => {
     if (!bookingData || !dailyRate) return
@@ -778,8 +783,8 @@ const BookingConfirmationPage = () => {
     const errors = {}
     if (!contactInfo.fullName.trim()) errors.fullName = "Vui lòng nhập họ và tên"
     if (!contactInfo.phone.trim()) errors.phone = "Vui lòng nhập số điện thoại"
-    else if (!/^\+?[1-9]\d{7,14}$/.test(contactInfo.phone.replace(/\s/g, ""))) {
-      errors.phone = "Số điện thoại không hợp lệ (ví dụ: +84977227788)"
+    else if (!/^\+?[0-9]\d{7,14}$/.test(contactInfo.phone.replace(/\s/g, ""))) {
+      errors.phone = "Số điện thoại không hợp lệ (ví dụ: 0977227788 hoặc +84977227788)"
     }
     if (!contactInfo.email.trim()) errors.email = "Vui lòng nhập email"
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.email)) {
@@ -831,16 +836,6 @@ const BookingConfirmationPage = () => {
     if (!agreeTerms) {
       toast.error("Vui lòng đồng ý với điều khoản")
       return
-    }
-    // Chỉ hiện OTP nếu chưa xác thực hoặc đã đổi số điện thoại
-    if (!otpVerified || contactInfo.phone !== lastConfirmedPhone.current) {
-      // Nếu đã xác thực nhưng đổi số thì reset trạng thái xác thực
-      if (otpVerified && contactInfo.phone !== lastConfirmedPhone.current) {
-        setOtpVerified(false);
-      }
-      setPendingOtpPhone(contactInfo.phone);
-      setShowOtpModal(true);
-      return;
     }
     try {
       setIsLoading(true)
@@ -910,7 +905,11 @@ const BookingConfirmationPage = () => {
     const { name, value } = e.target
     setContactInfo((prev) => ({ ...prev, [name]: value }))
     if (contactErrors[name]) {
-      setContactErrors((prev) => ({ ...prev, [name]: "" }))
+      setContactErrors((prev) => {
+        const next = { ...prev }
+        delete next[name]
+        return next
+      })
     }
   }
 
@@ -1183,29 +1182,6 @@ const BookingConfirmationPage = () => {
 
       <Footer />
 
-      {/* OTP Modal giống login/profile */}
-      {showOtpModal && pendingOtpPhone && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Xác thực số điện thoại</h3>
-            <PhoneOtpVerification phone={pendingOtpPhone} onVerified={handleOtpVerified} />
-            <button className="close-btn" onClick={() => setShowOtpModal(false)}>Đóng</button>
-          </div>
-          <style>{`
-            .modal-overlay {
-              position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-              background: rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; justify-content: center;
-            }
-            .modal {
-              background: #fff; border-radius: 12px; padding: 32px; min-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-              display: flex; flex-direction: column; align-items: center;
-            }
-            .close-btn {
-              margin-top: 16px; background: #eee; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;
-            }
-          `}</style>
-        </div>
-      )}
       {/* Scroll to Top Button */}
       {showScrollToTop && (
         <button

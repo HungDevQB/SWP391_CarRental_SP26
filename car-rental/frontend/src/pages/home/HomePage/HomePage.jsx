@@ -270,8 +270,8 @@ const HomePage = () => {
     // Handler khi nhấn yêu thích ở CarCard
     const handleFavoriteChange = async (carId, isFavorite) => {
         // Chỉ cập nhật trạng thái isFavorite của xe trong state, không refetch toàn bộ
-        setFeaturedCars((prev) => prev.map(car => car.id === carId ? { ...car, isFavorite } : car));
-        setPopularCars((prev) => prev.map(car => car.id === carId ? { ...car, isFavorite } : car));
+        setFeaturedCars((prev) => prev.map(car => (car.carId || car.id) === carId ? { ...car, isFavorite } : car));
+        setPopularCars((prev) => prev.map(car => (car.carId || car.id) === carId ? { ...car, isFavorite } : car));
     };
 
     // Swiper refs for navigation
@@ -300,14 +300,14 @@ const HomePage = () => {
                     getRegions(),
                 ])
 
-                setFeaturedCars(featuredResponse?.data?.data?.content || [])
-                setPopularCars(popularResponse?.data?.data?.content || [])
+                setFeaturedCars(featuredResponse?.data?.content || [])
+                setPopularCars(popularResponse?.data?.content || [])
                 setBrands(brandsResponse || [])
                 // ✅ SỬA: Gọi API lấy regions theo country code
                 try {
                     const regionsResponse = await api.get('/api/cars/regions/country/+84', config);
                     console.log("[HomePage] Vietnam Regions API Response:", regionsResponse.data);
-                    const regionsList = regionsResponse.data?.data || [];
+                    const regionsList = regionsResponse.data || [];
                     setRegions(regionsList);
                     setLocations(regionsList.map((region) => region.regionName));
                 } catch (regionError) {
@@ -822,7 +822,7 @@ const HomePage = () => {
                                 onSwiper={swiper => (brandSwiperRef.current = swiper)}
                             >
                                 {brands.map((brand) => (
-                                    <SwiperSlide key={`brand-${brand.id}`}>
+                                    <SwiperSlide key={`brand-${brand.carBrandId || brand.brandId || brand.id}`}>
                                         <div
                                             className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden hover:-translate-y-3 border border-blue-100 hover:border-indigo-300"
                                             onClick={() => navigate("/search", { state: { filterType: "all", filters: { brand: brand.brandName } } })}
@@ -922,7 +922,7 @@ const HomePage = () => {
                                         onSwiper={swiper => (featuredSwiperRef.current = swiper)}
                                     >
                                         {featuredCars.map((car) => (
-                                            <SwiperSlide key={`featured-car-${car.id}`}>
+                                            <SwiperSlide key={`featured-car-${car.carId || car.id}`}>
                                                 <CarCard
                                                     car={car}
                                                     type="featured"
@@ -1022,7 +1022,7 @@ const HomePage = () => {
                                         onSwiper={swiper => (popularSwiperRef.current = swiper)}
                                     >
                                         {popularCars.map((car) => (
-                                            <SwiperSlide key={`popular-car-${car.id}`}>
+                                            <SwiperSlide key={`popular-car-${car.carId || car.id}`}>
                                                 <CarCard
                                                     car={car}
                                                     type="popular"

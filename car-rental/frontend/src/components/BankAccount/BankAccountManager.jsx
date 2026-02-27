@@ -140,16 +140,12 @@ const BankAccountManager = ({
                 getMyBankAccountStats()
             ]);
 
-            if (accountsRes.success) {
-                console.log('API data:', accountsRes.data);
-                setBankAccounts(accountsRes.data);
-                const primary = accountsRes.data.find(acc => acc.isPrimary);
-                setPrimaryAccountState(primary || null);
-            }
-
-            if (statsRes.success) {
-                setStats(statsRes.data);
-            }
+            const accountList = Array.isArray(accountsRes) ? accountsRes : (accountsRes?.data || []);
+            console.log('API data:', accountList);
+            setBankAccounts(accountList);
+            const primary = accountList.find(acc => acc.isPrimary);
+            setPrimaryAccountState(primary || null);
+            if (statsRes) setStats(statsRes);
         } catch (error) {
             console.error('Error loading data:', error);
             toast.error('Không thể tải dữ liệu tài khoản ngân hàng');
@@ -205,7 +201,7 @@ const BankAccountManager = ({
 
             if (!editingAccount || editingAccount.accountNumber !== formData.accountNumber) {
                 const existsRes = await checkBankAccountExists(formData.accountNumber, formData.bankName);
-                if (existsRes.success && existsRes.data.exists) {
+                if (existsRes?.exists) {
                     setFormErrors({ accountNumber: 'Số tài khoản đã tồn tại trong ngân hàng này' });
                     return;
                 }
@@ -224,13 +220,9 @@ const BankAccountManager = ({
                 });
             }
 
-            if (response.success) {
-                toast.success(editingAccount ? 'Cập nhật tài khoản thành công!' : 'Thêm tài khoản thành công!');
-                resetForm();
-                await loadData();
-            } else {
-                throw new Error(response.error || 'Có lỗi xảy ra');
-            }
+            toast.success(editingAccount ? 'Cập nhật tài khoản thành công!' : 'Thêm tài khoản thành công!');
+            resetForm();
+            await loadData();
         } catch (error) {
             console.error('Error submitting form:', error);
             toast.error(error.message || 'Không thể lưu tài khoản');
@@ -260,13 +252,9 @@ const BankAccountManager = ({
         }
 
         try {
-            const response = await deleteBankAccount(account.bankAccountId);
-            if (response.success) {
-                toast.success('Xóa tài khoản thành công!');
-                await loadData();
-            } else {
-                throw new Error(response.error || 'Không thể xóa tài khoản');
-            }
+            await deleteBankAccount(account.bankAccountId);
+            toast.success('Xóa tài khoản thành công!');
+            await loadData();
         } catch (error) {
             console.error('Error deleting account:', error);
             toast.error(error.message || 'Không thể xóa tài khoản');
@@ -275,13 +263,9 @@ const BankAccountManager = ({
 
     const handleSetPrimary = async (account) => {
         try {
-            const response = await setPrimaryBankAccount(account.bankAccountId);
-            if (response.success) {
-                toast.success('Đặt tài khoản chính thành công!');
-                await loadData();
-            } else {
-                throw new Error(response.error || 'Không thể đặt tài khoản chính');
-            }
+            await setPrimaryBankAccount(account.bankAccountId);
+            toast.success('Đặt tài khoản chính thành công!');
+            await loadData();
         } catch (error) {
             console.error('Error setting primary:', error);
             toast.error(error.message || 'Không thể đặt tài khoản chính');

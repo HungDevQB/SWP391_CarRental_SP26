@@ -25,9 +25,15 @@ public class PaymentService : IPaymentService
         StripeConfiguration.ApiKey = config["Stripe:SecretKey"];
     }
 
+    // 1 USD = 25,000 VND (approximate exchange rate)
+    private const decimal VND_TO_USD_RATE = 25000m;
+
     public async Task<StripePaymentIntentDto> CreateStripePaymentIntentAsync(int bookingId, decimal amount)
     {
-        var amountInCents = (long)(amount * 100);
+        // Convert VND to USD cents for Stripe
+        var amountInUsd = amount / VND_TO_USD_RATE;
+        var amountInCents = (long)Math.Ceiling(amountInUsd * 100);
+        if (amountInCents < 50) amountInCents = 50; // Stripe minimum $0.50
         var options = new PaymentIntentCreateOptions
         {
             Amount = amountInCents,
@@ -74,22 +80,30 @@ public class PaymentService : IPaymentService
         return await FinalizePaymentAsync(bookingId, "STRIPE", intent.Id, intent.Amount / 100m);
     }
 
-    private async Task<bool> FinalizePaymentAsync(int bookingId, string method, string transactionId, decimal amount)
+    private async Task<bool> FinalizePaymentAsync(int bookingId, string method, string transactionId, decimal amountUsd)
     {
         var booking = await _context.Bookings.FindAsync(bookingId);
         if (booking == null) return false;
-        var existing = await _context.Payments.FirstOrDefaultAsync(p =>
-            p.BookingId == bookingId && p.TransactionId == transactionId);
+        var existing = await _context.Payments.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.BookingId == bookingId && p.TransactionId == transactionId);
         if (existing != null) return true;
+
+        var completedStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "completed")
+            ?? await _context.Statuses.FirstAsync();
+
+        // Convert USD back to VND for storage
+        var amountVnd = amountUsd * VND_TO_USD_RATE;
 
         var payment = new Payment
         {
             BookingId = bookingId,
-            Amount = amount,
-            PaymentMethod = method,
-            PaymentStatus = "completed",
+            Amount = amountVnd,
+            PaymentMethod = method.ToLower(),
+            PaymentStatusId = completedStatus.StatusId,
             TransactionId = transactionId,
-            PaymentDate = DateTime.UtcNow
+            PaymentDate = DateTime.UtcNow,
+            RegionId = booking.RegionId,
+            PaymentType = "full_payment"
         };
         await _paymentRepo.AddAsync(payment);
 
@@ -100,8 +114,8 @@ public class PaymentService : IPaymentService
             booking.UpdatedAt = DateTime.UtcNow;
         }
         await _paymentRepo.SaveChangesAsync();
-        await _notification.SendAsync(booking.CustomerId,
-            $"Thanh toan don #{bookingId} thanh cong!", "payment", bookingId, "booking");
+        try { await _notification.SendAsync(booking.CustomerId, $"Thanh toán đơn #{bookingId} thành công!", "in_app"); }
+        catch { /* ignore */ }
         return true;
     }
 

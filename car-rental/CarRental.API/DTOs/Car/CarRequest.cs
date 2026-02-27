@@ -62,4 +62,5 @@ public class CarSearchRequest
     public string? SortDir { get; set; }
     public int Page { get; set; } = 0;
     public int Size { get; set; } = 10;
+    public string? Keyword { get; set; }
 }

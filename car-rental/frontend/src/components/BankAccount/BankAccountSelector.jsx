@@ -14,13 +14,11 @@ const BankAccountSelector = ({ onSelect, selectedAccountId, className = '' }) =>
     const loadBankAccounts = async () => {
         try {
             const response = await getMyVerifiedBankAccounts();
-            if (response.success) {
-                setBankAccounts(response.data);
-                // Auto select primary account if available
-                const primaryAccount = response.data.find(acc => acc.isPrimary);
-                if (primaryAccount && !selectedAccountId) {
-                    onSelect(primaryAccount);
-                }
+            const accounts = Array.isArray(response) ? response : (response?.data || []);
+            setBankAccounts(accounts);
+            const primaryAccount = accounts.find(acc => acc.isPrimary);
+            if (primaryAccount && !selectedAccountId) {
+                onSelect(primaryAccount);
             }
         } catch (error) {
             console.error('Error loading bank accounts:', error);

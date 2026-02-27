@@ -19,18 +19,15 @@ public class Rating
     [Column("car_id")]
     public int CarId { get; set; }
 
-    [Column("rating_score", TypeName = "decimal(3,1)")]
-    public decimal RatingScore { get; set; }
+    [Column("rating_score")]
+    public byte RatingScore { get; set; }
 
     [MaxLength(1000)]
     [Column("comment")]
     public string? Comment { get; set; }
 
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    [Column("rating_date")]
+    public DateTime RatingDate { get; set; } = DateTime.UtcNow;
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;

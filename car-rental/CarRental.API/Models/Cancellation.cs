@@ -13,36 +13,42 @@ public class Cancellation
     [Column("booking_id")]
     public int BookingId { get; set; }
 
-    [Column("cancelled_by")]
-    public int CancelledBy { get; set; }
-
-    [MaxLength(1000)]
+    [MaxLength(500)]
     [Column("reason")]
     public string? Reason { get; set; }
 
     [Column("cancellation_date")]
     public DateTime CancellationDate { get; set; } = DateTime.UtcNow;
 
-    [Column("refund_amount", TypeName = "decimal(15,2)")]
+    [Column("refund_amount", TypeName = "decimal(10,2)")]
     public decimal? RefundAmount { get; set; }
 
-    [MaxLength(20)]
-    [Column("refund_status")]
-    public string? RefundStatus { get; set; }
+    [Column("region_id")]
+    public int? RegionId { get; set; }
+
+    [Column("status_id")]
+    public int StatusId { get; set; }
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
 
-    [Column("created_at")]
+    // Properties not in DB — kept for code compatibility
+    [NotMapped]
+    public int CancelledBy { get; set; }
+
+    [NotMapped]
+    public string? RefundStatus { get; set; }
+
+    [NotMapped]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("updated_at")]
+    [NotMapped]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
     [ForeignKey("BookingId")]
     public Booking? Booking { get; set; }
 
-    [ForeignKey("CancelledBy")]
+    [NotMapped]
     public User? CancelledByUser { get; set; }
 }

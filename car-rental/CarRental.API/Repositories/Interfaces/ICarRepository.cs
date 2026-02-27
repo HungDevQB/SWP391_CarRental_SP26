@@ -9,7 +9,7 @@ public interface ICarRepository : IBaseRepository<Car>
         int? regionId, string? location, DateTime? startDate, DateTime? endDate,
         int? seats, string? transmission, int? fuelTypeId, int? carBrandId,
         decimal? minPrice, decimal? maxPrice, int? year,
-        string? sortBy, bool sortDesc, int page, int size);
+        string? sortBy, bool sortDesc, int page, int size, string? keyword = null);
     Task<IEnumerable<Car>> GetBySupplierAsync(int supplierId);
     Task<IEnumerable<int>> GetDistinctYearsAsync();
     Task<bool> IsAvailableAsync(int carId, DateTime startDate, DateTime endDate, int? excludeBookingId = null);

@@ -7,42 +7,47 @@ namespace CarRental.API.Models;
 public class Promotion
 {
     [Key]
-    [Column("promotion_id")]
+    [Column("promo_id")]
     public int PromotionId { get; set; }
 
     [Required]
-    [MaxLength(50)]
+    [MaxLength(20)]
     [Column("code")]
     public string Code { get; set; } = string.Empty;
 
     [Column("discount_percentage", TypeName = "decimal(5,2)")]
     public decimal DiscountPercentage { get; set; }
 
-    [Column("max_discount_amount", TypeName = "decimal(15,2)")]
-    public decimal? MaxDiscountAmount { get; set; }
-
-    [Column("min_order_value", TypeName = "decimal(15,2)")]
-    public decimal? MinOrderValue { get; set; }
-
     [Column("start_date")]
-    public DateTime? StartDate { get; set; }
+    public DateOnly StartDate { get; set; }
 
     [Column("end_date")]
-    public DateTime? EndDate { get; set; }
+    public DateOnly EndDate { get; set; }
 
-    [Column("usage_limit")]
-    public int? UsageLimit { get; set; }
-
-    [Column("used_count")]
-    public int UsedCount { get; set; } = 0;
+    [MaxLength(200)]
+    [Column("description")]
+    public string? Description { get; set; }
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
 
-    [Column("created_at")]
+    // Properties not in DB — kept for code compatibility
+    [NotMapped]
+    public decimal? MaxDiscountAmount { get; set; }
+
+    [NotMapped]
+    public decimal? MinOrderValue { get; set; }
+
+    [NotMapped]
+    public int? UsageLimit { get; set; }
+
+    [NotMapped]
+    public int UsedCount { get; set; } = 0;
+
+    [NotMapped]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("updated_at")]
+    [NotMapped]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

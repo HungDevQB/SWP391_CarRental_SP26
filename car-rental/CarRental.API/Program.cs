@@ -96,6 +96,7 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRatingService, RatingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<CloudinaryService>();
 
 // ── 10. Background Services ───────────────────────────────────────────────────
 builder.Services.AddHostedService<PlatformFeeScheduler>();
@@ -118,6 +119,7 @@ if (app.Environment.IsDevelopment() || true) // Always show Swagger
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Car Rental API v1"));
 }
 
+app.UseStaticFiles();
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

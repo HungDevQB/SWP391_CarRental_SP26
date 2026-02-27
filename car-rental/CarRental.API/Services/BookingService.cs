@@ -71,11 +71,12 @@ public class BookingService : IBookingService
 
         if (!string.IsNullOrEmpty(request.PromotionCode))
         {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var promo = await _context.Promotions
                 .FirstOrDefaultAsync(p => p.Code == request.PromotionCode &&
                                           !p.IsDeleted &&
-                                          (p.EndDate == null || p.EndDate >= DateTime.UtcNow) &&
-                                          (p.StartDate == null || p.StartDate <= DateTime.UtcNow) &&
+                                          p.EndDate >= today &&
+                                          p.StartDate <= today &&
                                           (p.UsageLimit == null || p.UsedCount < p.UsageLimit));
             if (promo != null)
             {
@@ -87,10 +88,8 @@ public class BookingService : IBookingService
             }
         }
 
-        // Calculate platform fee
-        var feeLevel = await _context.FeeLevels
-            .FirstOrDefaultAsync(f => !f.IsDeleted && f.MinPrice <= basePrice && f.MaxPrice >= basePrice);
-        decimal serviceFee = feeLevel != null ? basePrice * feeLevel.FeePercentage / 100 : 0;
+        // Calculate platform fee (FeeLevel DB schema doesn't have min/max price columns, skip)
+        decimal serviceFee = 0;
 
         decimal totalPrice = basePrice - discount + serviceFee;
 
@@ -106,30 +105,54 @@ public class BookingService : IBookingService
             PickupLocation = request.PickupLocation,
             DropoffLocation = request.DropoffLocation,
             StatusId = pendingStatus?.StatusId ?? 1,
-            TotalPrice = totalPrice,
-            PricePerDay = car.RentalPricePerDay,
-            ServiceFee = serviceFee,
-            PaymentMethod = request.PaymentMethod,
+            RegionId = car.RegionId ?? 1,
+            SeatNumber = car.Seats ?? 4,
             PromotionId = promotionId
         };
 
-        await _bookingRepo.AddAsync(booking);
-        await _bookingRepo.SaveChangesAsync();
-
-        // Create financial record
-        await _context.BookingFinancials.AddAsync(new BookingFinancial
+        using var tx = await _context.Database.BeginTransactionAsync();
+        try
         {
-            BookingId = booking.BookingId,
-            BasePrice = basePrice,
-            ServiceFee = serviceFee,
-            DiscountAmount = discount,
-            Subtotal = basePrice - discount,
-            TotalPrice = totalPrice
-        });
-        await _context.SaveChangesAsync();
+            await _bookingRepo.AddAsync(booking);
+            await _bookingRepo.SaveChangesAsync();
 
-        // Notify supplier
-        await _notification.SendAsync(car.SupplierId, $"Đơn đặt xe mới #{booking.BookingId}", "booking", booking.BookingId, "booking");
+            await _context.BookingFinancials.AddAsync(new BookingFinancial
+            {
+                BookingId = booking.BookingId,
+                TotalFare = totalPrice,
+                AppliedDiscount = discount
+            });
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+
+        // Notify supplier (non-blocking)
+        try { await _notification.SendAsync(car.SupplierId, $"Đơn đặt xe mới #{booking.BookingId}", "in_app"); }
+        catch { /* ignore */ }
+
+        // Send confirmation email to customer (non-blocking)
+        try
+        {
+            var customer = await _context.Users.FindAsync(customerId);
+            if (customer?.Email != null)
+            {
+                var carInfo = $"{car.CarBrand?.BrandName} {car.CarModel}";
+                await _email.SendBookingConfirmationAsync(
+                    customer.Email,
+                    customer.Username ?? customer.Email,
+                    booking.BookingId,
+                    booking.StartDate,
+                    booking.EndDate,
+                    carInfo,
+                    totalPrice);
+            }
+        }
+        catch { /* ignore email errors */ }
 
         return (await GetByIdAsync(booking.BookingId))!;
     }
@@ -167,7 +190,8 @@ public class BookingService : IBookingService
             BookingId = bookingId,
             CancelledBy = cancelledBy,
             Reason = reason,
-            CancellationDate = DateTime.UtcNow
+            CancellationDate = DateTime.UtcNow,
+            StatusId = cancelledStatus?.StatusId ?? 3 // same status as the booking cancellation
         };
 
         await _context.Cancellations.AddAsync(cancellation);
@@ -222,16 +246,9 @@ public class BookingService : IBookingService
         var fin = await _context.BookingFinancials.FirstOrDefaultAsync(f => f.BookingId == bookingId);
         return fin == null ? null : new BookingFinancialDto
         {
-            BookingFinancialId = fin.BookingFinancialId,
             BookingId = fin.BookingId,
-            BasePrice = fin.BasePrice,
-            InsuranceFee = fin.InsuranceFee,
-            ServiceFee = fin.ServiceFee,
-            DriverFee = fin.DriverFee,
-            DiscountAmount = fin.DiscountAmount,
-            Subtotal = fin.Subtotal,
-            TaxAmount = fin.TaxAmount,
-            TotalPrice = fin.TotalPrice
+            DiscountAmount = fin.AppliedDiscount,
+            TotalPrice = fin.TotalFare
         };
     }
 
@@ -267,10 +284,9 @@ public class BookingService : IBookingService
         DropoffLocation = b.DropoffLocation,
         StatusName = b.Status?.StatusName,
         StatusId = b.StatusId,
-        TotalPrice = b.TotalPrice,
-        PricePerDay = b.PricePerDay,
-        ServiceFee = b.ServiceFee,
-        PaymentMethod = b.PaymentMethod,
+        TotalPrice = b.BookingFinancial?.TotalFare ?? 0,
+        PricePerDay = b.Car?.RentalPricePerDay ?? 0,
+        ServiceFee = 0,
         PromotionId = b.PromotionId,
         PromotionCode = b.Promotion?.Code,
         CreatedAt = b.CreatedAt
@@ -284,7 +300,7 @@ public class BookingService : IBookingService
         CarThumbnail = b.Car?.Images.FirstOrDefault()?.ImageUrl,
         StartDate = b.StartDate,
         EndDate = b.EndDate,
-        TotalPrice = b.TotalPrice,
+        TotalPrice = b.BookingFinancial?.TotalFare ?? 0,
         StatusName = b.Status?.StatusName,
         StatusId = b.StatusId,
         CreatedAt = b.CreatedAt

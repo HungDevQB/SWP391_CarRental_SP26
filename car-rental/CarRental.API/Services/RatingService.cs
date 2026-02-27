@@ -47,7 +47,7 @@ public class RatingService : IRatingService
             CarId = rating.CarId,
             RatingScore = rating.RatingScore,
             Comment = rating.Comment,
-            CreatedAt = rating.CreatedAt
+            CreatedAt = rating.RatingDate
         };
     }
 
@@ -63,7 +63,7 @@ public class RatingService : IRatingService
             CarId = r.CarId,
             RatingScore = r.RatingScore,
             Comment = r.Comment,
-            CreatedAt = r.CreatedAt
+            CreatedAt = r.RatingDate
         });
     }
 

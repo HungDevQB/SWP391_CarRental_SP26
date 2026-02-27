@@ -319,24 +319,35 @@ const waitingForPickup = (booking) => {
             const response = await getProfile();
             console.log('✅ Profile response:', response);
             
-            // Check cả 2 trường hợp response format
-            const userData = response.success ? response.data : response;
-            
+            // After interceptor, response is already the UserDto
+            const userData = response;
+
             if (userData && userData.userId) {
                 console.log('✅ Setting user state:', userData);
-                setUser(userData);
-                
+                // Normalize UserDto fields for compatibility with UI expectations
+                const normalizedUser = {
+                    ...userData,
+                    username: userData.username || userData.email || '',
+                    userDetail: {
+                        fullName: userData.fullName || userData.userDetail?.fullName || '',
+                        address: userData.address || userData.userDetail?.address || '',
+                        taxcode: userData.taxcode || userData.userDetail?.taxcode || '',
+                    },
+                    role: userData.role || userData.roleName || '',
+                };
+                setUser(normalizedUser);
+
                 // Set form data for editing
                 setFormData({
-                    username: userData.username || '',
-                    email: userData.email || '',
-                    phone: userData.phone || '',
-                    countryCode: userData.countryCode || '+84',
-                    preferredLanguage: userData.preferredLanguage || 'vi',
+                    username: normalizedUser.email || '',
+                    email: normalizedUser.email || '',
+                    phone: normalizedUser.phone || '',
+                    countryCode: normalizedUser.countryCode || '+84',
+                    preferredLanguage: normalizedUser.preferredLanguage || 'vi',
                     userDetail: {
-                        fullName: userData.userDetail?.fullName || '',
-                        address: userData.userDetail?.address || '',
-                        taxcode: userData.userDetail?.taxcode || ''
+                        fullName: normalizedUser.fullName || '',
+                        address: normalizedUser.address || normalizedUser.userDetail?.address || '',
+                        taxcode: normalizedUser.taxcode || normalizedUser.userDetail?.taxcode || ''
                     }
                 });
                 
@@ -358,22 +369,9 @@ const waitingForPickup = (booking) => {
             setBookingLoading(true);
             const response = await getUserBookingHistory();
             console.log('✅ Booking response:', response);
-            
-            if (response.success) {
-                // ✅ Debug payment info cho từng booking
-                response.data.forEach((booking, index) => {
-                    console.log(`📋 Booking ${index + 1}:`, {
-                        bookingId: booking.bookingId,
-                        paymentStatus: booking.paymentStatus,
-                        paymentType: booking.paymentType,
-                        paymentAmount: booking.paymentAmount,
-                        paymentDate: booking.paymentDate
-                    });
-                });
-
-                setBookings(response.data);
-                console.log('✅ Bookings loaded:', response.data);
-            }
+            const bookings = Array.isArray(response) ? response : (response?.content || response?.data || []);
+            setBookings(bookings);
+            console.log('✅ Bookings loaded:', bookings);
         } catch (error) {
             console.error('❌ Error fetching bookings:', error);
             console.warn('Booking fetch failed, continuing...');
@@ -387,9 +385,8 @@ const waitingForPickup = (booking) => {
         try {
             setFavoritesLoading(true);
             const response = await getFavoriteCars();
-            if (response.success) {
-                setFavorites(response.data);
-            }
+            const favList = Array.isArray(response) ? response : (response?.content || response?.data || []);
+            setFavorites(favList);
         } catch (error) {
             console.error('❌ Error fetching favorites:', error);
             setFavorites([]);
@@ -434,14 +431,16 @@ const waitingForPickup = (booking) => {
         try {
             setUpdating(true);
             console.log('🔄 Updating profile with data:', formData);
-            const response = await updateProfile(formData);
-            if (response.success) {
-                toast.success('Cập nhật thông tin thành công!');
-                setEditMode(false);
-                await fetchProfile(); // Refresh data
-            } else {
-                toast.error(response.error || 'Có lỗi xảy ra');
-            }
+            // Flatten form data to match UpdateProfileRequest shape
+            await updateProfile({
+                fullName: formData.userDetail?.fullName || formData.fullName,
+                phone: formData.phone,
+                countryCode: formData.countryCode,
+                address: formData.userDetail?.address || formData.address,
+            });
+            toast.success('Cập nhật thông tin thành công!');
+            setEditMode(false);
+            await fetchProfile(); // Refresh data
         } catch (error) {
             console.error('❌ Update profile error:', error);
             toast.error(error.message || 'Không thể cập nhật thông tin');
@@ -497,11 +496,9 @@ const waitingForPickup = (booking) => {
     // Handle remove favorite
     const handleRemoveFavorite = async (carId) => {
         try {
-            const response = await removeFavorite(carId);
-            if (response.success) {
-                toast.success('Đã xóa khỏi danh sách yêu thích');
-                setFavorites(prev => prev.filter(car => car.carId !== carId));
-            }
+            await removeFavorite(carId);
+            toast.success('Đã xóa khỏi danh sách yêu thích');
+            setFavorites(prev => prev.filter(car => car.carId !== carId));
         } catch (error) {
             console.error('❌ Remove favorite error:', error);
             toast.error('Không thể xóa khỏi danh sách yêu thích');
@@ -511,10 +508,8 @@ const waitingForPickup = (booking) => {
     // Handle email verification
     const handleSendEmailVerification = async () => {
         try {
-            const response = await sendEmailVerification();
-            if (response.success) {
-                toast.success('Email xác thực đã được gửi! Vui lòng kiểm tra hộp thư.');
-            }
+            await sendEmailVerification();
+            toast.success('Email xác thực đã được gửi! Vui lòng kiểm tra hộp thư.');
         } catch (error) {
             console.error('❌ Send email verification error:', error);
             toast.error(error.message || 'Không thể gửi email xác thực');
@@ -531,15 +526,9 @@ const handleCancelBooking = async (bookingId) => {
 
     try {
         console.log('🔄 Attempting to cancel booking:', bookingId);
-        const response = await cancelBooking(bookingId);
-        
-        if (response.success) {
-            toast.success('Hủy đặt xe thành công!');
-            // Refresh bookings to get updated status
-            await fetchBookings();
-        } else {
-            throw new Error(response.error || 'Không thể hủy đặt xe');
-        }
+        await cancelBooking(bookingId);
+        toast.success('Hủy đặt xe thành công!');
+        await fetchBookings();
     } catch (error) {
         console.error('❌ Cancel booking error:', error);
         
@@ -573,22 +562,14 @@ const handleCancelBooking = async (bookingId) => {
             console.log('🔄 Viewing booking details for:', booking.bookingId);
             
             const response = await getBookingDetails(booking.bookingId);
-            if (response.success) {
-                console.log('📋 API booking details:', response.data);
-
-                // ✅ UPDATE selectedBooking với data đầy đủ
-                setSelectedBooking(prev => ({
-                    ...prev, // Giữ data cũ
-                    ...response.data, // Override với data mới
-                    // Đảm bảo các field quan trọng
-                    carModel: response.data.carModel || prev.carModel,
-                    carLicensePlate: response.data.carLicensePlate || prev.carLicensePlate,
-                    paymentDetails: response.data.paymentDetails || []
-                }));
-
-            } else {
-                throw new Error(response.error || 'Không thể tải chi tiết đặt xe');
-            }
+            console.log('📋 API booking details:', response);
+            setSelectedBooking(prev => ({
+                ...prev,
+                ...response,
+                carModel: response?.carModel || prev.carModel,
+                carLicensePlate: response?.carLicensePlate || prev.carLicensePlate,
+                paymentDetails: response?.paymentDetails || []
+            }));
         } catch (error) {
             console.error('❌ Get booking details error:', error);
             toast.error(error.message || 'Không thể tải chi tiết đặt xe');
@@ -666,14 +647,9 @@ const handleCancelBooking = async (bookingId) => {
 
         try {
             console.log('🔄 Confirming delivery for booking:', bookingId);
-            const response = await confirmDelivery(bookingId);
-
-            if (response.success || response.data) {
-                toast.success('Xác nhận nhận xe thành công!');
-                await fetchBookings(); // Refresh danh sách
-            } else {
-                throw new Error(response.error || 'Không thể xác nhận nhận xe');
-            }
+            await confirmDelivery(bookingId);
+            toast.success('Xác nhận nhận xe thành công!');
+            await fetchBookings();
         } catch (error) {
             console.error('❌ Confirm delivery error:', error);
             toast.error(error.message || 'Không thể xác nhận nhận xe');
@@ -686,14 +662,9 @@ const handleCancelBooking = async (bookingId) => {
 
         try {
             console.log('🔄 Confirming return for booking:', bookingId);
-            const response = await confirmReturn(bookingId);
-
-            if (response.success || response.data) {
-                toast.success('Xác nhận trả xe thành công!');
-                await fetchBookings(); // Refresh danh sách
-            } else {
-                throw new Error(response.error || 'Không thể xác nhận trả xe');
-            }
+            await confirmReturn(bookingId);
+            toast.success('Xác nhận trả xe thành công!');
+            await fetchBookings();
         } catch (error) {
             console.error('❌ Confirm return error:', error);
             toast.error(error.message || 'Không thể xác nhận trả xe');
@@ -732,19 +703,10 @@ const handleCancelBooking = async (bookingId) => {
             // Gọi API tạo booking mới
             const response = await post('/api/bookings', bookingData);
             
-            if (response.success || response.data) {
-                toast.success('Đặt xe thành công!');
-                setShowRebookModal(false);
-                setRebookCarData(null);
-                
-                // Refresh booking list
-                await fetchBookings();
-                
-                // Có thể navigate đến trang thanh toán nếu cần
-                // navigate('/bookings');
-            } else {
-                throw new Error(response.error || 'Không thể đặt xe');
-            }
+            toast.success('Đặt xe thành công!');
+            setShowRebookModal(false);
+            setRebookCarData(null);
+            await fetchBookings();
         } catch (error) {
             console.error('❌ Submit rebook error:', error);
             throw error; // Re-throw để BookingModal có thể handle
@@ -1063,7 +1025,7 @@ const handleCancelBooking = async (bookingId) => {
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-bold text-gray-800">#{booking.bookingId}</h3>
-                                                <p className="text-gray-600 text-sm font-medium">{booking.car?.model || 'Xe không xác định'}</p>
+                                                <p className="text-gray-600 text-sm font-medium">{booking.carModel || booking.car?.model || 'Xe không xác định'}</p>
                                             </div>
                                         </div>
                                         <div className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusBadgeColor(booking.statusName)}`}>
@@ -1812,9 +1774,8 @@ const handleCancelBooking = async (bookingId) => {
                 {favorites.map((car, index) => (
                     <div key={car.carId || index} className="favorite-card">
                         <div className="favorite-content">
-                            <h4>{car.model}</h4>
-                            <p>{car.licensePlate}</p>
-                            <p>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(car.dailyRate)}/ngày</p>
+                            <h4>{car.carBrand} {car.carModel || car.model}</h4>
+                            <p>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(car.rentalPricePerDay || car.dailyRate || 0)}/ngày</p>
                             <button 
                                 className="btn primary small"
                                 onClick={() => navigate(`/cars/${car.carId}`)}
@@ -1980,12 +1941,8 @@ const handleCancelBooking = async (bookingId) => {
                 note: 'Customer confirmed cash payment for pickup'
             });
 
-            if (response.success) {
-                toast.success('Xác nhận thanh toán tiền mặt thành công!');
-                await fetchBookings(); // Refresh danh sách
-            } else {
-                throw new Error(response.error || 'Không thể xác nhận thanh toán tiền mặt');
-            }
+            toast.success('Xác nhận thanh toán tiền mặt thành công!');
+            await fetchBookings();
         } catch (error) {
             console.error('❌ Confirm cash pickup error:', error);
             toast.error(error.message || 'Không thể xác nhận thanh toán tiền mặt');
@@ -2031,9 +1988,39 @@ const handleCancelBooking = async (bookingId) => {
                                             </div>
                                         `;
                                     }} />
-                                    <div className="avatar-upload" title="Đổi ảnh đại diện">
+                                    <div
+                                        className="avatar-upload"
+                                        title="Đổi ảnh đại diện"
+                                        onClick={() => document.getElementById('avatar-file-input').click()}
+                                        style={{ cursor: 'pointer' }}
+                                    >
                                         <i className="fas fa-camera"></i>
                                     </div>
+                                    <input
+                                        id="avatar-file-input"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        style={{ display: 'none' }}
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            try {
+                                                const res = await api.post('/api/users/me/avatar', formData, {
+                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                });
+                                                const url = res.data?.data?.avatarUrl;
+                                                if (url) setUser(prev => ({
+                                                    ...prev,
+                                                    userDetail: { ...prev.userDetail, avatar: url }
+                                                }));
+                                            } catch (err) {
+                                                alert('Lỗi upload ảnh: ' + (err.response?.data?.message || err.message));
+                                            }
+                                            e.target.value = '';
+                                        }}
+                                    />
                                 </div>
                             
                             <div className="verification-badge">
@@ -2073,7 +2060,7 @@ const handleCancelBooking = async (bookingId) => {
                                     <i className="fas fa-shield-alt"></i>
                                     <span>Đáng tin cậy</span>
                                 </div>
-                                {user.roleId === 3 && (
+                                {(user.roleId === 3 || user.roleName === 'supplier' || user.role === 'supplier') && (
                                     <div className="badge premium">
                                         <i className="fas fa-crown"></i>
                                         <span>Khách hàng</span>
@@ -2945,14 +2932,10 @@ const handleCancelBooking = async (bookingId) => {
                                                     setShowOtpModal(false);
                                                     try {
                                                         setUpdating(true);
-                                                        const response = await updateProfile({ ...formData, phone: fullPhone });
-                                                        if (response.success) {
-                                                            toast.success('Cập nhật thông tin thành công!');
-                                                            setEditMode(false);
-                                                            await fetchProfile();
-                                                        } else {
-                                                            toast.error(response.error || 'Có lỗi xảy ra');
-                                                        }
+                                                        await updateProfile({ ...formData, phone: fullPhone });
+                                                        toast.success('Cập nhật thông tin thành công!');
+                                                        setEditMode(false);
+                                                        await fetchProfile();
                                                     } catch (error) {
                                                         toast.error(error.message || 'Không thể cập nhật thông tin');
                                                     } finally {
@@ -3001,12 +2984,10 @@ const PaymentModal = ({ data, onClose, onPayment }) => {
             };
             const endpoint = '/api/payments';
             const response = await post(endpoint, paymentData);
-            if (response.redirectUrl) {
+            if (response?.redirectUrl) {
                 window.location.href = response.redirectUrl;
-            } else if (response.success) {
-                onPayment();
             } else {
-                alert(response.error || 'Thanh toán thất bại!');
+                onPayment();
             }
         } catch (err) {
             alert('Có lỗi khi thanh toán: ' + (err.message || err));

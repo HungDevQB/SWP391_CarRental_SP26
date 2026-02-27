@@ -23,7 +23,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
         int? regionId, string? location, DateTime? startDate, DateTime? endDate,
         int? seats, string? transmission, int? fuelTypeId, int? carBrandId,
         decimal? minPrice, decimal? maxPrice, int? year,
-        string? sortBy, bool sortDesc, int page, int size)
+        string? sortBy, bool sortDesc, int page, int size, string? keyword = null)
     {
         var query = _dbSet
             .Include(c => c.CarBrand)
@@ -42,6 +42,8 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
         if (minPrice.HasValue) query = query.Where(c => c.RentalPricePerDay >= minPrice);
         if (maxPrice.HasValue) query = query.Where(c => c.RentalPricePerDay <= maxPrice);
         if (year.HasValue) query = query.Where(c => c.Year == year);
+        if (!string.IsNullOrEmpty(keyword))
+            query = query.Where(c => c.CarModel.Contains(keyword) || c.CarBrand.BrandName.Contains(keyword));
 
         // Exclude cars with active bookings in the date range
         if (startDate.HasValue && endDate.HasValue)

@@ -98,7 +98,7 @@ export default function StripePayment({ bookingId, amount, onSuccess, onError })
           disabled={loading}
           className="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
         >
-          {loading ? 'Đang tải...' : `Thanh toán $${amount}`}
+          {loading ? 'Đang tải...' : `Thanh toán ${Number(amount).toLocaleString('vi-VN')} VND`}
         </button>
       </div>
     );
