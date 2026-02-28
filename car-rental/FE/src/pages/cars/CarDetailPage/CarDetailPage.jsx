@@ -1,3 +1,4 @@
+// CarDetailPage - full car detail view with booking and reviews
 
 "use client"
 
