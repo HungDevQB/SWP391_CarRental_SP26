@@ -39,6 +39,9 @@ import LoadingSpinner from '@/components/ui/Loading/LoadingSpinner.jsx';
 import PhoneOtpVerification from '@/components/Common/PhoneOtpVerification';
 import Footer from '@/components/layout/Footer/Footer.jsx';
 
+// Max rental duration allowed (days)
+const MAX_RENTAL_DAYS = 30
+
 // Enhanced Progress Steps Component
 const ProgressSteps = ({ currentStep = 1 }) => {
   const steps = [
