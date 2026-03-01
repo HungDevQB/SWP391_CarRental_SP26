@@ -1,3 +1,4 @@
+// LoginRegister - combined login and registration page
 "use client"
 
 import { useState, useContext, useEffect, useRef } from "react"
