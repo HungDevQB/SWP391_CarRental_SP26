@@ -1,3 +1,4 @@
+// ChatWindow - real-time chat UI with SignalR connection
 "use client"
 
 import { useEffect, useState, useRef } from "react"
