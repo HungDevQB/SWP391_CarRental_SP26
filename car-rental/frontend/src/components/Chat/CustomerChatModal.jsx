@@ -41,9 +41,9 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
     const fetchMessages = async () => {
       if (open && customer && supplier) {
         try {
-          const token = sessionStorage.getItem("token")
+          const token = localStorage.getItem("token")
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat-messages/between-users?senderId=${customer.id}&receiverId=${supplier.id}`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/conversation/${supplier.id}`,
             {
               headers: {
                 Authorization: token ? `Bearer ${token}` : "",
@@ -51,14 +51,15 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
               },
             },
           )
-          const data = await res.json()
+          const json = await res.json()
+          const data = Array.isArray(json) ? json : (json.data || [])
           setMessages(
-            Array.isArray(data)
-              ? data.map((msg) => ({
-                  ...msg,
-                  self: msg.senderId === customer.id,
-                }))
-              : [],
+            data.map((msg) => ({
+              ...msg,
+              content: msg.messageText || msg.content || '',
+              timestamp: msg.sentAt || msg.timestamp,
+              self: msg.senderId === customer.id,
+            }))
           )
         } catch (err) {
           setMessages([])
@@ -68,13 +69,6 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         cs = new ChatService(customer.id, customer.username, (msg) => {
           setMessages((prev) => {
             if (msg.messageId && prev.some((m) => m.messageId === msg.messageId)) return prev
-            if (msg.id && prev.some((m) => m.id === msg.id)) return prev
-            if (
-              !msg.messageId &&
-              !msg.id &&
-              prev.some((m) => m.timestamp === msg.timestamp && m.content === msg.content)
-            )
-              return prev
             return [
               ...prev,
               {
@@ -131,12 +125,12 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         formData.append("file", img)
         try {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat-messages/upload-image`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/upload-image`,
             {
               method: "POST",
               body: formData,
               headers: {
-                Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
             },
           )

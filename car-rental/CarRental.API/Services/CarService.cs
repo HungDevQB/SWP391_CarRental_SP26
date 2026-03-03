@@ -53,7 +53,7 @@ public class CarService : ICarService
             RentalPricePerDay = request.RentalPricePerDay,
             Description = request.Description,
             RegionId = request.RegionId,
-            StatusId = 11 // available
+            StatusId = 1 // pending — chờ admin duyệt
         };
 
         await _carRepo.AddAsync(car);
@@ -180,6 +180,7 @@ public class CarService : ICarService
         LicensePlate = c.LicensePlate,
         Year = c.Year,
         Seats = c.Seats,
+        Color = c.Color,
         Transmission = c.Transmission,
         RentalPricePerDay = c.RentalPricePerDay,
         Description = c.Description,

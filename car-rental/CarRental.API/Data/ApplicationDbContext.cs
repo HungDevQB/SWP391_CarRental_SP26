@@ -84,7 +84,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<BookingTax>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<SupplierRevenue>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<BankAccount>().HasQueryFilter(e => !e.IsDeleted);
-        modelBuilder.Entity<RegistrationRequest>().HasQueryFilter(e => !e.IsDeleted);
+        // RegistrationRequest has no IsDeleted column
         modelBuilder.Entity<CashPaymentConfirmation>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<CarConditionReport>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<CarConditionImage>().HasQueryFilter(e => !e.IsDeleted);
@@ -378,11 +378,7 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.SetNull);
 
         // ── RegistrationRequest ───────────────────────────────────────────────
-        modelBuilder.Entity<RegistrationRequest>()
-            .HasOne(r => r.User)
-            .WithMany(u => u.RegistrationRequests)
-            .HasForeignKey(r => r.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // No FK to User - stores raw registration data
 
         // ── BankAccount ───────────────────────────────────────────────────────
         modelBuilder.Entity<BankAccount>()

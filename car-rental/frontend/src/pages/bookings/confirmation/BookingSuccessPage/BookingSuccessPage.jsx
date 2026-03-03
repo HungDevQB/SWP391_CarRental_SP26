@@ -498,21 +498,35 @@ const BookingSuccessPage = () => {
   // Fetch car details separately if carId is available
   useEffect(() => {
     const fetchCarDetails = async () => {
-      if (bookingData?.carId && (!bookingData.car || bookingData.car.model === 'Không xác định')) {
+      // Get carId — may be in bookingData directly or need to fetch from API
+      let carId = bookingData?.carId;
+
+      // If carId not in state, try fetching the booking to get it
+      if (!carId && bookingData?.bookingId) {
         try {
-          console.log("Fetching car details for carId:", bookingData.carId)
-          const carResponse = await getCarById(bookingData.carId)
-          console.log("Car details response:", carResponse)
-          console.log("Car image from API:", carResponse?.data?.image || carResponse?.image)
-          setCarDetails(carResponse.data || carResponse)
+          const bookingRes = await getBookingById(bookingData.bookingId);
+          carId = bookingRes?.carId;
+          // Also set basic car info from booking if available
+          if (bookingRes?.car?.model) {
+            setCarDetails(bookingRes.car);
+          }
         } catch (err) {
-          console.error("Error fetching car details:", err)
+          console.error("Error fetching booking for carId:", err);
+        }
+      }
+
+      if (carId && !bookingData.car?.model) {
+        try {
+          const carResponse = await getCarById(carId);
+          setCarDetails(carResponse);
+        } catch (err) {
+          console.error("Error fetching car details:", err);
         }
       }
     }
 
-    fetchCarDetails()
-  }, [bookingData?.carId])
+    if (bookingData) fetchCarDetails();
+  }, [bookingData?.carId, bookingData?.bookingId])
 
   // Loading state
   if (loading) {

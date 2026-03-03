@@ -446,14 +446,13 @@ export const getCarById = async (carId) => {
     if (!carId) throw new Error('Vui lòng cung cấp ID xe');
     try {
         const response = await api.get(`/api/cars/${carId}`);
-        const car = response.data;
+        const car = response.data?.data ?? response.data;
         if (!car) return car;
         // Normalize field names for frontend compatibility
         return {
             ...car,
-            model: car.model || car.carModel,
-            dailyRate: car.dailyRate || car.rentalPricePerDay,
-            // imageUrls is array of strings; expose as images array of objects for legacy UI
+            model: car.carModel || car.model,
+            dailyRate: car.rentalPricePerDay || car.dailyRate,
             images: car.images || (car.imageUrls || []).map(url => ({ imageUrl: url })),
         };
     } catch (error) {
@@ -1015,7 +1014,20 @@ export const getBookingById = async (bookingId) => {
     if (!bookingId) throw new Error('Vui lòng cung cấp ID đặt xe');
     try {
         const response = await api.get(`/api/bookings/${bookingId}`);
-        return response.data;
+        const data = response.data?.data ?? response.data;
+        if (!data) return data;
+        // Build nested car object from flat BookingDto fields
+        return {
+            ...data,
+            carId: data.carId || data.car_id,
+            car: data.car || {
+                model: data.carModel,
+                carModel: data.carModel,
+                brandName: data.carBrand,
+                imageUrl: data.carThumbnail,
+                images: data.carThumbnail ? [{ imageUrl: data.carThumbnail }] : [],
+            },
+        };
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy thông tin đặt xe thất bại');
     }
@@ -1047,7 +1059,7 @@ export const ensureBookingFinancials = async (bookingId) => {
 export const getReportsData = async () => {
     try {
         const response = await api.get('/api/reports/overview');
-        return response.data;
+        return response.data?.data ?? response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy dữ liệu báo cáo thất bại');
     }
@@ -1090,22 +1102,63 @@ export const getRecentBookingUsers = async (size = 5) => {
 
 // Lấy danh sách xe của supplier
 export const getSupplierCars = async () => {
-    const res = await api.get('/api/supplier/cars');
-    return res.data;
+    const res = await api.get('/api/cars/supplier/my-cars');
+    const raw = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    // Normalize field names to match frontend component expectations
+    return raw.map(car => ({
+        ...car,
+        model: car.carModel || car.model || '',
+        dailyRate: car.rentalPricePerDay ?? car.dailyRate ?? 0,
+        image: car.thumbnailUrl || car.image || null,
+        statusName: car.status || car.statusName || '',
+        brandName: car.brandName || '',
+    }));
 };
 
 // Thêm xe mới cho supplier
 export const addSupplierCar = async (carData, images = []) => {
-    const formData = new FormData();
-    formData.append('carData', JSON.stringify(carData));
-    images.forEach(img => formData.append('images', img));
-    const token = getItem('token');
-    const res = await api.post('/api/supplier/cars', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-            ...(token && { Authorization: `Bearer ${token}` })
-        }
-    });
+    // 1. Fetch lookups để map name → id
+    const [brandsRes, fuelTypesRes, regionsRes] = await Promise.all([
+        api.get('/api/cars/brands').catch(() => ({ data: [] })),
+        api.get('/api/cars/fuel-types').catch(() => ({ data: [] })),
+        api.get('/api/cars/regions').catch(() => ({ data: [] })),
+    ]);
+    const brands = Array.isArray(brandsRes.data) ? brandsRes.data : (brandsRes.data?.data || []);
+    const fuelTypes = Array.isArray(fuelTypesRes.data) ? fuelTypesRes.data : (fuelTypesRes.data?.data || []);
+    const regions = Array.isArray(regionsRes.data) ? regionsRes.data : (regionsRes.data?.data || []);
+
+    const brandObj = brands.find(b => b.brandName?.toLowerCase() === carData.brand?.toLowerCase()) || brands[0];
+    const fuelObj = fuelTypes.find(f => f.fuelTypeName?.toLowerCase() === carData.fuelType?.toLowerCase()) || fuelTypes[0];
+    const regionObj = regions.find(r => r.regionName?.toLowerCase() === carData.region?.toLowerCase()) || regions[0];
+
+    // 2. Upload ảnh lên Cloudinary
+    const imageUrls = [];
+    for (const img of images) {
+        const fd = new FormData();
+        fd.append('file', img);
+        try {
+            const uploadRes = await api.post('/api/chat/upload-image', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            imageUrls.push(typeof uploadRes.data === 'string' ? uploadRes.data : uploadRes.data?.url || uploadRes.data);
+        } catch { /* skip failed uploads */ }
+    }
+
+    // 3. Gửi JSON với field names đúng
+    const body = {
+        carModel: carData.name || carData.model,
+        carBrandId: brandObj?.carBrandId || 1,
+        fuelTypeId: fuelObj?.fuelTypeId || 1,
+        licensePlate: carData.licensePlate,
+        year: carData.year ? parseInt(carData.year) : undefined,
+        seats: carData.numOfSeats ? parseInt(carData.numOfSeats) : undefined,
+        transmission: carData.transmission,
+        rentalPricePerDay: parseFloat(carData.rentalPrice || carData.dailyRate),
+        description: carData.description,
+        regionId: regionObj?.regionId,
+        imageUrls,
+    };
+    const res = await api.post('/api/cars', body);
     return res.data;
 };
 
@@ -1113,7 +1166,7 @@ export const addSupplierCar = async (carData, images = []) => {
 export const deleteSupplierCar = async (carId) => {
     if (!carId) throw new Error('Vui lòng cung cấp ID xe');
     const token = getToken?.() || getItem('token');
-    const res = await api.delete(`/api/supplier/cars/${carId}`, {
+    const res = await api.delete(`/api/cars/${carId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
     return res.data;
@@ -1122,37 +1175,60 @@ export const deleteSupplierCar = async (carId) => {
 // Cập nhật xe của supplier
 export const updateSupplierCar = async (carId, carData) => {
     if (!carId) throw new Error('Vui lòng cung cấp ID xe');
-    const token = getToken?.() || getItem('token');
-    const res = await api.put(`/api/supplier/cars/${carId}`, carData, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
+    const body = {
+        carModel: carData.name || carData.model || carData.carModel,
+        licensePlate: carData.licensePlate,
+        year: carData.year ? parseInt(carData.year) : undefined,
+        seats: carData.numOfSeats ? parseInt(carData.numOfSeats) : (carData.seats ? parseInt(carData.seats) : undefined),
+        transmission: carData.transmission,
+        rentalPricePerDay: carData.rentalPrice ? parseFloat(carData.rentalPrice) : (carData.rentalPricePerDay ? parseFloat(carData.rentalPricePerDay) : undefined),
+        description: carData.description,
+        imageUrls: carData.imageUrls,
+    };
+    const res = await api.put(`/api/cars/${carId}`, body);
     return res.data;
 };
 
 // Lấy danh sách booking của supplier (đúng endpoint backend)
 export const getSupplierOrders = async () => {
-    const res = await api.get('/api/supplier/bookings');
-    return res.data;
+    const res = await api.get('/api/bookings/supplier/bookings');
+    const raw = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    return raw.map(b => ({
+        ...b,
+        statusName: b.statusName || b.status?.statusName || '',
+        carModel: b.carModel || b.car?.carModel || '',
+        totalPrice: b.totalPrice || b.bookingFinancial?.totalFare || 0,
+    }));
 };
 
 // Dashboard APIs
 export const getSupplierDashboardSummary = async () => {
-    const res = await api.get('/api/supplier/dashboard/summary');
-    return res.data;
+    const [carsRes, bookingsRes] = await Promise.all([
+        api.get('/api/cars/supplier/my-cars').catch(() => ({ data: [] })),
+        api.get('/api/bookings/supplier/bookings').catch(() => ({ data: [] })),
+    ]);
+    const cars = Array.isArray(carsRes.data) ? carsRes.data : (carsRes.data?.data || []);
+    const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : (bookingsRes.data?.data || []);
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || b.totalFare || 0), 0);
+    return {
+        data: {
+            totalCars: cars.length,
+            totalBookings: bookings.length,
+            pendingBookings: bookings.filter(b => b.status === 'pending').length,
+            totalRevenue,
+        }
+    };
 };
 
 export const getSupplierRecentBookings = async () => {
-    const res = await api.get('/api/supplier/dashboard/recent-bookings');
+    const res = await api.get('/api/bookings/supplier/bookings');
     return res.data;
 };
 
 export const getSupplierMonthlyStats = async () => {
-    const token = getToken?.() || getItem('token');
-    const res = await api.get('/api/supplier/dashboard/monthly-stats', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
+    const res = await api.get('/api/bookings/supplier/bookings').catch(() => ({ data: [] }));
     return res.data;
-  };
+};
 
 export const getNextBookingId = async () => {
     try {
@@ -1375,7 +1451,7 @@ export const payoutSupplier = async (bookingId) => {
 
 export const supplierConfirmBooking = async (bookingId) => {
     try {
-        const response = await api.put(`/api/supplier/bookings/${bookingId}/confirm`);
+        const response = await api.patch(`/api/bookings/${bookingId}/status`, { statusId: 2 });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Không thể xác nhận đơn đặt xe');
@@ -1384,7 +1460,7 @@ export const supplierConfirmBooking = async (bookingId) => {
 
 export const supplierRejectBooking = async (bookingId) => {
     try {
-        const response = await api.put(`/api/supplier/bookings/${bookingId}/reject`);
+        const response = await api.patch(`/api/bookings/${bookingId}/status`, { statusId: 5 });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Không thể từ chối đơn đặt xe');
@@ -1396,7 +1472,7 @@ export const supplierRejectBooking = async (bookingId) => {
  */
 export const supplierConfirmFullPayment = async (bookingId) => {
     try {
-        const response = await api.put(`/api/supplier/bookings/${bookingId}/confirm-full-payment`);
+        const response = await api.patch(`/api/bookings/${bookingId}/status`, { statusId: 4 });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Không thể xác nhận đã nhận đủ tiền');
@@ -1431,7 +1507,7 @@ export const getPendingCars = async () => {
   const res = await api.get('/api/cars/admin/pending-cars', {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
-  return res.data;
+  return res.data?.data ?? res.data;
 };
 
 // Duyệt xe (admin)
@@ -1457,7 +1533,7 @@ export const rejectCar = async (carId) => {
  */
 export const supplierPrepareCar = async (bookingId) => {
     try {
-        const response = await api.put(`/api/supplier/bookings/${bookingId}/prepare`);
+        const response = await api.patch(`/api/bookings/${bookingId}/status`, { statusId: 3 });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Không thể chuyển sang trạng thái chờ nhận xe');
@@ -1465,11 +1541,11 @@ export const supplierPrepareCar = async (bookingId) => {
 };
 
 /**
- * Supplier xác nhận đã giao xe (chuyển supplierDeliveryConfirm = true)
+ * Supplier xác nhận đã giao xe
  */
 export const supplierConfirmDelivery = async (bookingId) => {
     try {
-        const response = await api.put(`/api/supplier/bookings/${bookingId}/supplier-delivery-confirm`);
+        const response = await api.patch(`/api/bookings/${bookingId}/status`, { statusId: 3 });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Không thể xác nhận giao xe');
@@ -2016,15 +2092,21 @@ export const getChatMessagesByBooking = async (bookingId) => {
     }
 };
 
-// Lấy danh sách supplier đã từng nhắn với customer
-export const getSuppliersOfCustomer = async (customerId) => {
+// Lấy danh sách người đã từng nhắn tin (conversations)
+export const getSuppliersOfCustomer = async (_customerId) => {
     try {
-        const response = await api.get(`/api/chat-users/of-customer`, {
-            params: { customerId }
-        });
-        return response.data;
+        const response = await api.get('/api/chat/conversations');
+        const raw = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return raw.map(c => ({
+            id: c.userId,
+            userId: c.userId,
+            username: c.userName,
+            fullName: c.userName,
+            avatarUrl: c.avatarUrl,
+            lastMessage: c.lastMessage,
+        }));
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Lấy danh sách supplier đã từng nhắn với customer thất bại');
+        throw new Error(error.response?.data?.message || 'Lấy danh sách chat thất bại');
     }
 };
 
@@ -2040,54 +2122,12 @@ export const verifyPhoneOtp = async (phone, otp) => {
   return response.data;
 };
 
-export const getSupplierDrivers = async () => {
-  const token = getToken?.() || getItem('token');
-  const res = await api.get('/api/supplier/drivers', {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
-  return res.data;
-};
-
-export const createSupplierDriver = async (driverData) => {
-  const token = getToken?.() || getItem('token');
-  const res = await api.post('/api/supplier/drivers', driverData, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
-  return res.data;
-};
-
-export const updateSupplierDriver = async (driverId, driverData) => {
-  const token = getToken?.() || getItem('token');
-  const res = await api.put(`/api/supplier/drivers/${driverId}`, driverData, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
-  return res.data;
-};
-
-export const deleteSupplierDriver = async (driverId) => {
-  const token = getToken?.() || getItem('token');
-  const res = await api.delete(`/api/supplier/drivers/${driverId}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
-  return res.data;
-};
-
-export const getSupplierInsurances = async () => {
-    const token = getToken?.() || getItem('token');
-    const res = await api.get('/api/supplier/insurances', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
-    return res.data;
-};
-
-// Lấy danh sách bảo trì của supplier
-export const getSupplierMaintenances = async () => {
-    const token = getToken?.() || getItem('token');
-    const res = await api.get('/api/supplier/maintenances', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
-    return res.data;
-};
+export const getSupplierDrivers = async () => { return { data: [] }; };
+export const createSupplierDriver = async (driverData) => { throw new Error('Chức năng chưa hỗ trợ'); };
+export const updateSupplierDriver = async (driverId, driverData) => { throw new Error('Chức năng chưa hỗ trợ'); };
+export const deleteSupplierDriver = async (driverId) => { throw new Error('Chức năng chưa hỗ trợ'); };
+export const getSupplierInsurances = async () => { return { data: [] }; };
+export const getSupplierMaintenances = async () => { return { data: [] }; };
 
 // Tạo bảo hiểm mới
 export const createInsurance = async (insuranceData) => {

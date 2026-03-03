@@ -33,4 +33,34 @@ public class CloudinaryService
             throw new Exception(result.Error.Message);
         return result.SecureUrl.ToString();
     }
+
+    public async Task<string> UploadChatImageAsync(IFormFile file)
+    {
+        using var stream = file.OpenReadStream();
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            PublicId = $"chat/{Guid.NewGuid()}",
+            Overwrite = false,
+        };
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        if (result.Error != null)
+            throw new Exception(result.Error.Message);
+        return result.SecureUrl.ToString();
+    }
+
+    public async Task<string> UploadDocumentAsync(IFormFile file, string folder)
+    {
+        using var stream = file.OpenReadStream();
+        var uploadParams = new RawUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            PublicId = $"documents/{folder}/{Guid.NewGuid()}_{file.FileName}",
+            Overwrite = false,
+        };
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        if (result.Error != null)
+            throw new Exception(result.Error.Message);
+        return result.SecureUrl.ToString();
+    }
 }

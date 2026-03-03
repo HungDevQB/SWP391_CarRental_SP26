@@ -13,6 +13,7 @@ public class CarDto
     public string? LicensePlate { get; set; }
     public int? Year { get; set; }
     public int? Seats { get; set; }
+    public string? Color { get; set; }
     public string? Transmission { get; set; }
     public decimal RentalPricePerDay { get; set; }
     public string? Description { get; set; }

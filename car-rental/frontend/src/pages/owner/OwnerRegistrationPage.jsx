@@ -500,10 +500,6 @@ const OwnerRegistrationPage = () => {
       toast.error("Vui lòng kiểm tra lại thông tin và hoàn thiện các trường bắt buộc");
       return;
     }
-    if (!isPhoneVerified) {
-      setShowOtpModal(true);
-      return;
-    }
     setIsSubmitting(true);
     try {
       await createOwnerRegistrationRequest({
@@ -1578,27 +1574,6 @@ const OwnerRegistrationPage = () => {
         </motion.section>
       </div>
 
-      {/* OTP Modal */}
-      {showOtpModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full flex flex-col items-center">
-            <PhoneOtpVerification
-              phone={formData.phoneNumber}
-              onVerified={() => {
-                setIsPhoneVerified(true);
-                setShowOtpModal(false);
-                toast.success("Xác thực OTP thành công! Vui lòng nhấn lại Xác nhận đăng ký.");
-              }}
-            />
-            <button
-              className="mt-6 px-6 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
-              onClick={() => setShowOtpModal(false)}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
       {/* Scroll to Top Button */}
       {(() => {
         const [showScroll, setShowScroll] = React.useState(false);

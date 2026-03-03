@@ -71,21 +71,21 @@ const ChatWindow = ({ currentUser, initialSelectedUser, suppliers = [] }) => {
 
     // Load lịch sử chat
     fetch(
-      `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat-messages/between-users?senderId=${currentUser.id}&receiverId=${selectedUser.id}`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/conversation/${selectedUser.id}`,
       {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       },
     )
       .then((res) => res.json())
-      .then((data) => {
+      .then((json) => {
+        const data = Array.isArray(json) ? json : (json.data || [])
         console.log("[WS][Supplier] Lịch sử chat:", data)
-        historyMessages = Array.isArray(data) ? data : []
-        // Chuẩn hóa: luôn có trường content
-        historyMessages = historyMessages.map(m => ({
+        historyMessages = data.map(m => ({
           ...m,
-          content: m.content || m.messageContent
+          content: m.messageText || m.content || m.messageContent || '',
+          timestamp: m.sentAt || m.timestamp,
         }))
         setMessages((prev) => {
           // Merge lịch sử và tin nhắn realtime, tránh trùng lặp

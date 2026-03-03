@@ -1,77 +1,65 @@
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
-
+import * as signalR from '@microsoft/signalr';
 
 class ChatService {
   constructor(userId, username, onMessage) {
     this.userId = userId;
     this.username = username;
     this.onMessage = onMessage;
-    this.stompClient = null;
+    this.connection = null;
   }
 
-  connect() {
-    const socket = new SockJS(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/ws-chat`);
-    this.stompClient = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      connectHeaders: {
-        Authorization: `Bearer ${sessionStorage.getItem('token')}`
-      },
-      onConnect: () => {
-        console.log('[WS] Connected to WebSocket');
-        // Gửi sự kiện addUser để backend lưu username vào session
-        this.stompClient.publish({
-          destination: '/app/chat.addUser',
-          body: JSON.stringify({ senderId: this.userId, sender: this.username })
-        });
-        console.log('[WS] Đã gửi addUser:', { senderId: this.userId, sender: this.username });
-        console.log('[WS] Subscribing to /user/queue/messages ...');
-        this.stompClient.subscribe(
-          '/user/queue/messages',
-          (msg) => {
-            console.log('[WS][Supplier] [LOG] Raw STOMP message:', msg);
-            console.log('[WS][Supplier] Nhận message từ /user/queue/messages:', msg.body);
-            try {
-              const parsed = JSON.parse(msg.body);
-              console.log('[WS][Supplier] Parsed message:', parsed);
-              this.onMessage(parsed);
-            } catch (e) {
-              console.error('[WS][Supplier] Lỗi parse message:', e, msg.body);
-            }
-          }
-        );
-        console.log('[WS] Đã subscribe thành công.');
-      },
-      onStompError: (frame) => {
-        console.error('[WS] STOMP error:', frame);
-      },
-      onWebSocketError: (event) => {
-        console.error('[WS] WebSocket error:', event);
-      }
+  async connect() {
+    const token = localStorage.getItem('token');
+    this.connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/hub/chat`, {
+        accessTokenFactory: () => token
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+
+    this.connection.on('ReceiveMessage', (message) => {
+      console.log('[SignalR] ReceiveMessage:', message);
+      this.onMessage(this._normalize(message));
     });
-    console.log('[WS] Activating STOMP client...');
-    this.stompClient.activate();
+
+    this.connection.on('MessageSent', (message) => {
+      console.log('[SignalR] MessageSent:', message);
+      this.onMessage(this._normalize(message));
+    });
+
+    try {
+      await this.connection.start();
+      console.log('[SignalR] Connected to /hub/chat');
+    } catch (err) {
+      console.error('[SignalR] Connection failed:', err);
+    }
+  }
+
+  // Normalize backend ChatMessageDto → frontend format
+  _normalize(msg) {
+    return {
+      ...msg,
+      content: msg.messageText || msg.content || '',
+      timestamp: msg.sentAt || msg.timestamp,
+    };
   }
 
   sendMessage(message) {
-    console.log('[WS] Attempting to send message:', message);
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.publish({
-        destination: '/app/chat.sendMessage',
-        body: JSON.stringify(message),
-      });
-      console.log('[WS] Message sent:', message);
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      this.connection.invoke('SendMessage', {
+        receiverId: message.receiverId,
+        messageText: message.content || message.messageText || '',
+        messageType: 'text',
+        imageUrls: message.imageUrls || []
+      }).catch(err => console.error('[SignalR] SendMessage error:', err));
     } else {
-      console.error('[WS] Cannot send message, STOMP client not connected');
+      console.error('[SignalR] Not connected, state:', this.connection?.state);
     }
   }
 
   disconnect() {
-    if (this.stompClient) {
-      console.log('[WS] Disconnecting STOMP client...');
-      this.stompClient.deactivate();
-    }
+    this.connection?.stop();
   }
 }
 

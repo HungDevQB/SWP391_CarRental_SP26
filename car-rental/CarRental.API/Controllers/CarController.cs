@@ -1,8 +1,10 @@
+using CarRental.API.Data;
 using CarRental.API.DTOs.Car;
 using CarRental.API.DTOs.Common;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CarRental.API.Controllers;
 
@@ -11,11 +13,13 @@ namespace CarRental.API.Controllers;
 public class CarController : ControllerBase
 {
     private readonly ICarService _carService;
+    private readonly ApplicationDbContext _context;
     private int CurrentUserId => int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-    public CarController(ICarService carService)
+    public CarController(ICarService carService, ApplicationDbContext context)
     {
         _carService = carService;
+        _context = context;
     }
 
     [HttpGet]
@@ -156,5 +160,60 @@ public class CarController : ControllerBase
     {
         await _carService.UpdateStatusAsync(id, status);
         return Ok(ApiResponse.OkNoData("Cập nhật trạng thái thành công"));
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpGet("admin/pending-cars")]
+    public async Task<IActionResult> GetPendingCars()
+    {
+        var cars = await _context.Cars
+            .Include(c => c.Images)
+            .Include(c => c.CarBrand)
+            .Include(c => c.FuelType)
+            .Where(c => !c.IsDeleted && c.StatusId == 1) // pending
+            .Select(c => new
+            {
+                carId = c.CarId,
+                model = c.CarModel,
+                year = c.Year,
+                color = c.Color,
+                licensePlate = c.LicensePlate,
+                dailyRate = c.RentalPricePerDay,
+                numOfSeats = c.Seats,
+                statusId = c.StatusId,
+                supplierId = c.SupplierId,
+                supplier = _context.Users
+                    .Where(u => u.UserId == c.SupplierId)
+                    .Select(u => new { u.UserId, u.Username, u.Email })
+                    .FirstOrDefault(),
+                images = c.Images.Select(i => new { i.ImageId, i.ImageUrl }).ToList(),
+                brand = c.CarBrand != null ? c.CarBrand.BrandName : null,
+                fuelType = c.FuelType != null ? c.FuelType.FuelTypeName : null
+            })
+            .ToListAsync();
+
+        return Ok(ApiResponse<object>.Ok(cars));
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost("admin/approve-car/{id:int}")]
+    public async Task<IActionResult> ApproveCar(int id)
+    {
+        var car = await _context.Cars.FindAsync(id);
+        if (car == null) return NotFound(ApiResponse<object>.Fail("Xe không tồn tại", 404));
+        car.StatusId = 11; // available
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse.OkNoData("Duyệt xe thành công"));
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost("admin/reject-car/{id:int}")]
+    public async Task<IActionResult> RejectCar(int id)
+    {
+        var car = await _context.Cars.FindAsync(id);
+        if (car == null) return NotFound(ApiResponse<object>.Fail("Xe không tồn tại", 404));
+        car.StatusId = 22; // rejected
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse.OkNoData("Từ chối xe thành công"));
     }
 }

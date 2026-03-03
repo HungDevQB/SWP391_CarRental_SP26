@@ -1,5 +1,6 @@
 using CarRental.API.DTOs.Chat;
 using CarRental.API.DTOs.Common;
+using CarRental.API.Services;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,22 @@ namespace CarRental.API.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
+    private readonly CloudinaryService _cloudinary;
     private int CurrentUserId => int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-    public ChatController(IChatService chatService)
+    public ChatController(IChatService chatService, CloudinaryService cloudinary)
     {
         _chatService = chatService;
+        _cloudinary = cloudinary;
+    }
+
+    [HttpPost("upload-image")]
+    public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file");
+        var url = await _cloudinary.UploadChatImageAsync(file);
+        return Ok(url);
     }
 
     [HttpPost("send")]

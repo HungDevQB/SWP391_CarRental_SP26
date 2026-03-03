@@ -58,7 +58,7 @@ useEffect(() => {
     setLoading(false);
     return;
   }
-  const token = sessionStorage.getItem("token");
+  const token = localStorage.getItem("token");
   if (!token) {
     setError("auth");
     setLoading(false);
@@ -99,20 +99,21 @@ useEffect(() => {
 
     // Lấy lịch sử chat
     fetch(
-      `${API_BASE}/api/chat-messages/between-users?senderId=${user.userId || user.id || user.customerId}&receiverId=${selectedSupplier.id || selectedSupplier.userId}`,
+      `${API_BASE}/api/chat/conversation/${selectedSupplier.id || selectedSupplier.userId}`,
       {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }
     )
       .then((res) => res.json())
-      .then((data) => {
-        console.log('[Customer][Message.jsx] API trả về lịch sử chat:', data);
-        const historyMessages = Array.isArray(data) ? data.map(m => ({
+      .then((json) => {
+        const raw = Array.isArray(json) ? json : (json.data || []);
+        const historyMessages = raw.map(m => ({
           ...m,
-          content: m.content || m.messageContent || ""
-        })) : [];
+          content: m.messageText || m.content || m.messageContent || "",
+          timestamp: m.sentAt || m.timestamp,
+        }));
         setMessages(historyMessages);
       })
       .catch((err) => {

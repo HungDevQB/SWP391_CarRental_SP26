@@ -80,7 +80,6 @@ public class User
     public ICollection<BankAccount> BankAccounts { get; set; } = new List<BankAccount>();
     public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
     public ICollection<UserActionLog> UserActionLogs { get; set; } = new List<UserActionLog>();
-    public ICollection<RegistrationRequest> RegistrationRequests { get; set; } = new List<RegistrationRequest>();
     public ICollection<SignUpToProvide> SignUpToProvides { get; set; } = new List<SignUpToProvide>();
     public ICollection<SupplierRevenue> SupplierRevenues { get; set; } = new List<SupplierRevenue>();
     public ICollection<CashPaymentConfirmation> CashPaymentConfirmations { get; set; } = new List<CashPaymentConfirmation>();

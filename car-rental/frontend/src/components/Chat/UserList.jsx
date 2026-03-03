@@ -29,7 +29,7 @@ const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
       return;
     }
     
-    const token = sessionStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (!token) {
       setError('auth');
       setLoading(false);
@@ -39,7 +39,7 @@ const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
     setLoading(true);
     setError(null);
     
-    fetch(`${API_BASE}/api/chat-users/of-user?supplierId=${currentUserId}`, {
+    fetch(`${API_BASE}/api/chat/conversations`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
@@ -49,8 +49,18 @@ const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
         }
         return res.json();
       })
-      .then(data => {
-        setUsers(Array.isArray(data) ? data : []);
+      .then(json => {
+        const raw = Array.isArray(json) ? json : (json.data || []);
+        // Map ChatConversationDto → user object frontend expects
+        const data = raw.map(c => ({
+          id: c.userId,
+          userId: c.userId,
+          username: c.userName,
+          fullName: c.userName,
+          avatarUrl: c.avatarUrl,
+          lastMessage: c.lastMessage,
+        }));
+        setUsers(data);
         setLoading(false);
       })
       .catch(err => {
