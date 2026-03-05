@@ -1,3 +1,4 @@
+// PaymentService - Stripe integration and payment processing
 using CarRental.API.Data;
 using CarRental.API.DTOs.Payment;
 using CarRental.API.Models;
