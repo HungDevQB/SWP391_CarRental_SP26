@@ -39,6 +39,10 @@ import {
 import LoadingSpinner from '@/components/ui/Loading/LoadingSpinner.jsx';
 import Footer from '@/components/layout/Footer/Footer.jsx';
 
+// Booking success email will be sent automatically after this page loads
+const SUPPORT_EMAIL = "support@carrental.vn"
+const SUPPORT_PHONE = "1900 1234"
+
 // Progress Steps Component
 const ProgressSteps = ({ currentStep = 4 }) => {
   const steps = [
