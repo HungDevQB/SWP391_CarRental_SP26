@@ -1,3 +1,4 @@
+// RatingService - car rating and review management
 using CarRental.API.Data;
 using CarRental.API.DTOs.Common;
 using CarRental.API.Models;
