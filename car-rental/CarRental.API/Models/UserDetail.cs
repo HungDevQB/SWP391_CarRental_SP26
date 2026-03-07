@@ -10,9 +10,17 @@ public class UserDetail
     [Column("user_id")]
     public int UserId { get; set; }
 
+    [MaxLength(100)]
+    [Column("name")]
+    public string? Name { get; set; }
+
     [MaxLength(500)]
     [Column("address")]
     public string? Address { get; set; }
+
+    [MaxLength(20)]
+    [Column("taxcode")]
+    public string? TaxCode { get; set; }
 
     [Column("date_of_birth")]
     public DateTime? DateOfBirth { get; set; }
@@ -57,6 +65,9 @@ public class UserDetail
 
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; }
 
     // Navigation
     [ForeignKey("UserId")]

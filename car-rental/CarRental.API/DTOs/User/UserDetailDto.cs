@@ -13,6 +13,7 @@ public class UserDetailDto
     public string? DrivingLicense { get; set; }
     public string? DrivingLicenseFrontImage { get; set; }
     public string? DrivingLicenseBackImage { get; set; }
+    public string? Avatar { get; set; }
     public bool IsVerified { get; set; }
 }
 

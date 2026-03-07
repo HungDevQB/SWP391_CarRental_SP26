@@ -38,10 +38,7 @@ public class ChatHub : Hub
     {
         var senderId = GetCurrentUserId();
         var message = await _chatService.SendMessageAsync(senderId, request);
-
-        // Send to receiver
         await Clients.Group($"user_{request.ReceiverId}").SendAsync("ReceiveMessage", message);
-        // Echo back to sender
         await Clients.Caller.SendAsync("MessageSent", message);
     }
 

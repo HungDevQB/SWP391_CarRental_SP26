@@ -57,6 +57,7 @@ import Footer from '@/components/layout/Footer/Footer';
 import LoadingSpinner from '@/components/ui/Loading/LoadingSpinner.jsx';
 import AutocompleteSearch from '@/components/Common/AutocompleteSearch';
 import FavoriteButton from '@/components/ui/FavoriteButton/FavoriteButton.jsx';
+import AiCarAdvisorWidget from '@/components/features/cars/AiCarAdvisorWidget.jsx';
 
 
 // Enhanced Error Message Component
@@ -96,6 +97,54 @@ function removeVietnameseTones(str) {
         .replace(/\s+/g, ' ')
         .trim()
         .toLowerCase();
+}
+
+/** UI sort → API /api/cars/filter sortBy */
+function mapSortToApi(uiSort) {
+    if (!uiSort) return undefined;
+    if (uiSort === "price-low") return "price_asc";
+    if (uiSort === "price-high") return "price_desc";
+    if (uiSort === "name") return "name_asc";
+    return undefined;
+}
+
+/** Chuyển giá trị form react-hook-form → query params backend CarSearchRequest */
+function buildCarSearchParams(form, brands, fuelTypes) {
+    const params = {};
+    if (form.regionId) {
+        const id = parseInt(String(form.regionId), 10);
+        if (!Number.isNaN(id)) params.regionId = id;
+    }
+    if (form.year) {
+        const y = parseInt(String(form.year), 10);
+        if (!Number.isNaN(y)) params.year = y;
+    }
+    if (form.brand) {
+        const b = brands.find((x) => x.brandName === form.brand);
+        if (b?.carBrandId != null) params.carBrandId = b.carBrandId;
+    }
+    if (form.fuelType) {
+        const f = fuelTypes.find((x) => x.fuelTypeName === form.fuelType);
+        if (f?.fuelTypeId != null) params.fuelTypeId = f.fuelTypeId;
+    }
+    if (form.numOfSeats) {
+        const s = parseInt(String(form.numOfSeats), 10);
+        if (!Number.isNaN(s)) params.seats = s;
+    }
+    if (form.priceRange) {
+        const pr = String(form.priceRange);
+        const parts = pr.split("-");
+        if (parts.length >= 2) {
+            const min = parseFloat(parts[0]);
+            const max = parseFloat(parts[1]);
+            if (!Number.isNaN(min)) params.minPrice = min;
+            if (!Number.isNaN(max)) params.maxPrice = max;
+        }
+    }
+    const apiSort = mapSortToApi(form.sortBy);
+    if (apiSort) params.sortBy = apiSort;
+    if (form.searchQuery?.trim()) params.keyword = form.searchQuery.trim();
+    return params;
 }
 
 const SearchPage = () => {
@@ -278,21 +327,23 @@ const SearchPage = () => {
         }
     }
 
-    const fetchCars = async (filters = {}, page = 0) => {
+    const fetchCars = async (filters = {}, page = 0, brandsOverride = null, fuelTypesOverride = null) => {
         try {
             setLoading(true)
             setError("")
             const finalFilters = { ...filters };
-            // Luôn thêm date filter nếu enabled - KHÔNG điều kiện gì khác
             if (dateFilter.enabled) {
                 finalFilters.pickupDateTime = `${dateFilter.pickupDate}T${dateFilter.pickupTime}:00`;
                 finalFilters.dropoffDateTime = `${dateFilter.dropoffDate}T${dateFilter.dropoffTime}:00`;
-                console.log('[SearchPage] Adding date filters to request:', {
-                    pickupDateTime: finalFilters.pickupDateTime,
-                    dropoffDateTime: finalFilters.dropoffDateTime
-                });
             }
-            const response = await filterCars(finalFilters, page, carsPerPage, filters.sortBy || "")
+            const brandList = brandsOverride ?? brands;
+            const fuelList = fuelTypesOverride ?? fuelTypes;
+            const apiParams = buildCarSearchParams(finalFilters, brandList, fuelList);
+            if (dateFilter.enabled) {
+                apiParams.pickupDateTime = finalFilters.pickupDateTime;
+                apiParams.dropoffDateTime = finalFilters.dropoffDateTime;
+            }
+            const response = await filterCars(apiParams, page, carsPerPage);
             const pageData = response.data || {};
             setCars(pageData)
             setFilteredCars(pageData.content || [])
@@ -347,9 +398,21 @@ const SearchPage = () => {
                 return d?.data ?? d ?? [];
             };
 
-            setBrands(extract(brandsRes));
+            const loadedBrands = extract(brandsRes);
+            const loadedFuelTypes = extract(fuelTypesRes);
+
+            setBrands(loadedBrands);
             setYears(extract(yearsRes));
-            setFuelTypes(extract(fuelTypesRes));
+            setFuelTypes(loadedFuelTypes);
+
+            setSeatOptions([4, 5, 7, 8, 9, 12, 16]);
+            setPriceRanges([
+                { value: "0-500000", label: "Dưới 500.000 ₫/ngày" },
+                { value: "500000-1000000", label: "500.000 - 1.000.000 ₫/ngày" },
+                { value: "1000000-2000000", label: "1.000.000 - 2.000.000 ₫/ngày" },
+                { value: "2000000-999999999", label: "Trên 2.000.000 ₫/ngày" },
+            ]);
+            setCountries([{ countryCode: "+84", countryName: "Việt Nam" }]);
 
             // Xác định loại filter từ location state
             const filterType = location.state?.filterType || "all";
@@ -370,9 +433,13 @@ const SearchPage = () => {
                         setFilteredCars(carsData.content || []);
                         break;
                     default:
-                        await fetchCars({}, 0);
+                        await fetchCars({}, 0, loadedBrands, loadedFuelTypes);
                         break;
                 }
+            }
+
+            if (!location.state?.searchParams && !location.state?.filters) {
+                setIsInitialFilterApplied(true);
             }
 
             setIsInitialDataLoaded(true);
@@ -1821,8 +1888,8 @@ const SearchPage = () => {
                                                 >
                                                     <option value="">Tất cả mức giá</option>
                                                     {priceRanges.map((range, idx) => (
-                                                        <option key={range || idx} value={range}>
-                                                            {range}
+                                                        <option key={range.value || idx} value={range.value}>
+                                                            {range.label ?? range.value}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -2017,7 +2084,11 @@ const SearchPage = () => {
                                                                     onClick={() => {
                                                                         setValue("sortBy", option.value)
                                                                         setShowSortDropdown(false)
-                                                                        handleFilterChange({ ...filters, sortBy: option.value })
+                                                                        const merged = { ...getValues(), sortBy: option.value }
+                                                                        Object.keys(merged).forEach((k) => {
+                                                                            if (merged[k] === "") delete merged[k]
+                                                                        })
+                                                                        handleFilterChange(merged)
                                                                     }}
                                                                 >
                                                                     {option.label}
@@ -2423,6 +2494,7 @@ const SearchPage = () => {
                 ratingCount={quickViewRatingCount}
                 ratingLoading={quickViewRatingLoading}
             />
+            <AiCarAdvisorWidget />
         </div>
     );
 }

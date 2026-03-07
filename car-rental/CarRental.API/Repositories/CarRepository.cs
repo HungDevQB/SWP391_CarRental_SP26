@@ -35,7 +35,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
             .AsQueryable();
 
         if (regionId.HasValue) query = query.Where(c => c.RegionId == regionId);
-        if (seats.HasValue) query = query.Where(c => c.Seats >= seats);
+        if (seats.HasValue) query = query.Where(c => c.Seats == (byte?)seats.Value);
         if (!string.IsNullOrEmpty(transmission)) query = query.Where(c => c.Transmission == transmission);
         if (fuelTypeId.HasValue) query = query.Where(c => c.FuelTypeId == fuelTypeId);
         if (carBrandId.HasValue) query = query.Where(c => c.CarBrandId == carBrandId);
@@ -62,6 +62,7 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
             "price_asc" => query.OrderBy(c => c.RentalPricePerDay),
             "price_desc" => query.OrderByDescending(c => c.RentalPricePerDay),
             "newest" => query.OrderByDescending(c => c.CreatedAt),
+            "name_asc" => query.OrderBy(c => c.CarBrand!.BrandName).ThenBy(c => c.CarModel),
             _ => query.OrderByDescending(c => c.CarId)
         };
 

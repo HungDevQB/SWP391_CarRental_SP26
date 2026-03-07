@@ -222,6 +222,7 @@ public class UserService : IUserService
         DrivingLicense = d.DrivingLicense,
         DrivingLicenseFrontImage = d.DrivingLicenseFrontImage,
         DrivingLicenseBackImage = d.DrivingLicenseBackImage,
+        Avatar = d.Avatar,
         IsVerified = d.IsVerified
     };
 }

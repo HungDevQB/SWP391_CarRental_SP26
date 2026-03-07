@@ -41,7 +41,7 @@ public class AuthService : IAuthService
         // Save session
         await SaveSessionAsync(user.UserId, token);
 
-        return BuildAuthResponse(user, token, role);
+        return BuildAuthResponse(user, token, role, _jwt);
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -71,13 +71,18 @@ public class AuthService : IAuthService
         await _userRepo.SaveChangesAsync();
 
         // Create empty user detail
-        await _context.UserDetails.AddAsync(new UserDetail { UserId = user.UserId });
+        await _context.UserDetails.AddAsync(new UserDetail
+        {
+            UserId = user.UserId,
+            Name = request.FullName,
+            Address = null
+        });
         await _context.SaveChangesAsync();
 
         var token = _jwt.GenerateToken(user.UserId, user.Email, roleName);
         await SaveSessionAsync(user.UserId, token);
 
-        return BuildAuthResponse(user, token, roleName);
+        return BuildAuthResponse(user, token, roleName, _jwt);
     }
 
     public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request)
@@ -179,14 +184,14 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
     }
 
-    private AuthResponse BuildAuthResponse(User user, string token, string role) => new()
+    private static AuthResponse BuildAuthResponse(User user, string token, string role, JwtService jwt) => new()
     {
         Token = token,
         Username = user.Email,
         Role = role,
-        ExpiresAt = _jwt.GetExpiresAtMs(),
+        ExpiresAt = jwt.GetExpiresAtMs(),
         UserId = user.UserId,
-        AvatarUrl = user.AvatarUrl,
-        FullName = user.FullName
+        AvatarUrl = user.AvatarUrl ?? user.UserDetail?.Avatar,
+        FullName = user.FullName ?? user.UserDetail?.Name
     };
 }

@@ -17,6 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpClient();
+
 // ── 2. Authentication (JWT + Google OAuth2) ───────────────────────────────────
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
@@ -90,6 +92,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICarService, CarService>();
+builder.Services.AddScoped<ICarAdvisorService, CarAdvisorService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IChatService, ChatService>();
@@ -143,7 +146,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await db.Database.CanConnectAsync();
-        Console.WriteLine("✓ Connected to CarRentalDB");
+        await UserDetailSchemaBootstrapper.EnsureAsync(db.Database);
+        Console.WriteLine("✓ Connected to CarRentalDB (UserDetail schema checked)");
     }
     catch (Exception ex)
     {

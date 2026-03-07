@@ -415,6 +415,17 @@ export const getCars = async (filters = {}) => {
     }
 };
 
+/** Hội thoại tư vấn chọn xe (AI / heuristic). messages: { role, content }[] */
+export const sendCarAdvisorChat = async (messages) => {
+    try {
+        const response = await api.post('/api/car-advisor/chat', { messages });
+        return response.data;
+    } catch (error) {
+        const msg = error.response?.data?.message || error.message || 'Tư vấn xe thất bại';
+        throw new Error(msg);
+    }
+};
+
 export const searchCars = async (filters = {}, page = 0, size = 10) => {
     // XÓA dropoffLocation khỏi filters nếu có
     const { dropoffLocation, ...restFilters } = filters;
@@ -992,15 +1003,18 @@ export const filterCars = (filters, page = 0, size = 9, sortBy = "") => {
     return api.get("/api/cars/filter", { params });
 };
 
-export const findCars = async (searchQuery, page = 0, size = 9) => {
+export const findCars = async (searchQuery, page = 0, size = 9, extraParams = {}) => {
     try {
         const token = getToken();
+        const { query: _q, ...restExtra } = extraParams || {};
+        const params = {
+            keyword: searchQuery,
+            page,
+            size,
+            ...restExtra,
+        };
         const response = await api.get('/api/cars/filter', {
-            params: {
-                keyword: searchQuery,
-                page,
-                size
-            },
+            params,
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         return response.data?.data ?? response.data;

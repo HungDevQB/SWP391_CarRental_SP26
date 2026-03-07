@@ -51,6 +51,10 @@ public class CarSearchRequest
     public string? Location { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    /// <summary>Alias từ query frontend (pickupDateTime) — map sang khoảng thời gian trùng StartDate/EndDate.</summary>
+    public DateTime? PickupDateTime { get; set; }
+    /// <summary>Alias từ query frontend (dropoffDateTime).</summary>
+    public DateTime? DropoffDateTime { get; set; }
     public int? Seats { get; set; }
     public string? Transmission { get; set; }
     public int? FuelTypeId { get; set; }

@@ -38,8 +38,9 @@ public class UserRepository : BaseRepository<User>, IUserRepository
         var query = _dbSet.Include(u => u.Role).AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
-            query = query.Where(u => u.Email.Contains(search) ||
-                                     u.Username.Contains(search));
+            query = query.Where(u =>
+                (u.Email != null && u.Email.Contains(search)) ||
+                (u.Username != null && u.Username.Contains(search)));
 
         var total = await query.CountAsync();
         var items = await query.Skip(page * size).Take(size).ToListAsync();

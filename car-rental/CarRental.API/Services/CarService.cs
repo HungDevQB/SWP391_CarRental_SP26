@@ -27,9 +27,11 @@ public class CarService : ICarService
 
     public async Task<PageResponse<CarListDto>> SearchAsync(CarSearchRequest req)
     {
+        var start = req.StartDate ?? req.PickupDateTime;
+        var end = req.EndDate ?? req.DropoffDateTime;
         bool sortDesc = req.SortDir?.ToLower() == "desc";
         var (items, total) = await _carRepo.SearchAsync(
-            req.RegionId, req.Location, req.StartDate, req.EndDate,
+            req.RegionId, req.Location, start, end,
             req.Seats, req.Transmission, req.FuelTypeId, req.CarBrandId,
             req.MinPrice, req.MaxPrice, req.Year,
             req.SortBy, sortDesc, req.Page, req.Size, req.Keyword);
