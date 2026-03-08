@@ -1,3 +1,4 @@
+// AdminLayout - admin dashboard layout with sidebar navigation
 import Sidebar from './Sidebar';
 import { Outlet } from 'react-router-dom';
 
