@@ -1,3 +1,4 @@
+// ProfilePage - user profile management with avatar and license verification
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '@/store/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
