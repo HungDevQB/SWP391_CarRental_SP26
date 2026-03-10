@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Home, Receipt, XCircle, AlertTriangle } from 'lucide-react';
 
+// Success page - shown after platform fee payment confirmed
 const PlatformFeeSuccess = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();

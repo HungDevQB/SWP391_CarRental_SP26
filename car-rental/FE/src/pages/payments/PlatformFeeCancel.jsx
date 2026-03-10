@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { XCircle, Home, RefreshCw, AlertCircle } from 'lucide-react';
 
+// Auto-redirect delay after cancellation (ms)
+const CANCEL_REDIRECT_DELAY = 5000
+
 const PlatformFeeCancel = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
