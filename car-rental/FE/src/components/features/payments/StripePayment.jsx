@@ -1,3 +1,4 @@
+// StripePayment - Stripe Elements integration for secure card payments
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
