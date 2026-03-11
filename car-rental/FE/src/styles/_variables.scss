@@ -1,0 +1,30 @@
+// src/styles/_variables.scss
+$primary-blue: #4682B4;
+$primary-light-blue: #87CEEB;
+$white: #ffffff;
+$gray-dark: #4A4A4A;
+$gray-medium: #cccccc;
+$gray-light: #f0f0f0;
+$gray-50: #f9fafb;
+$gray-700: #4a5568;
+$green-500: #38a169;
+$red-500: #e53e3e;
+$red-700: #c53030;
+$red-100: #fee2e2;
+$blue-500: #4299e1;
+$blue-700: #2b6cb0;
+$accent-yellow: #FFD700;
+$yellow-500: #ecc94b;
+$yellow-700: #d69e2e; // Thêm biến $yellow-700 cho hover
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+$text-light: #ffffff;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$border-radius-md: 8px; // Thêm biến $border-radius-md
+$danger-color: #e3342f; // màu đỏ cảnh báo
+$light-color: #fff; // màu sáng cho text trên nền đỏ
+$border-radius-sm: 6px; // hoặc 8px, tuỳ bạn
+$transition-base: 0.2s all; // hoặc 0.3s all
+$font-size-base: 1rem; // hoặc 16px, tuỳ bạn muốn cỡ chữ cơ bản là bao nhiêu
+$spacing-xs: 4px; // hoặc 2px, tuỳ bạn muốn khoảng cách nhỏ nhất là bao nhiêu

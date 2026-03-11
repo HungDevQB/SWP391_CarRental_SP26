@@ -1,0 +1,75 @@
+import React, { useState, useEffect, useRef } from 'react';
+import ChatBox from '../Common/ChatBox';
+import * as signalR from '@microsoft/signalr';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+
+const SupplierChatManager = ({ supplierId, supplierName, customers: initialCustomers }) => {
+  console.log('[SupplierChatManager] supplierId:', supplierId);
+  const [customers, setCustomers] = useState(initialCustomers || []);
+  const [activeCustomer, setActiveCustomer] = useState(null);
+  const connectionRef = useRef(null);
+
+  // Lắng nghe tin nhắn mới qua SignalR để tự động thêm customer mới
+  useEffect(() => {
+    if (!supplierId) return;
+    const token = localStorage.getItem('token');
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${API_BASE}/hub/chat`, { accessTokenFactory: () => token })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+
+    connection.on('ReceiveMessage', (msg) => {
+      setCustomers(prev => {
+        if (!prev.some(c => c.userId === msg.senderId)) {
+          return [...prev, { userId: msg.senderId, fullName: msg.senderName, username: msg.senderName }];
+        }
+        return prev;
+      });
+    });
+
+    connection.start().catch(err => console.error('[SupplierChatManager] SignalR error:', err));
+    connectionRef.current = connection;
+    return () => { connection.stop(); };
+  }, [supplierId]);
+
+  // Nếu prop customers thay đổi (ví dụ khi load lại trang), cập nhật danh sách
+  useEffect(() => {
+    setCustomers(initialCustomers || []);
+  }, [initialCustomers]);
+
+  return (
+    <div className="flex h-full">
+      {/* Sidebar danh sách customer */}
+      <div className="w-80 bg-gray-100 border-r p-4">
+        <h3 className="font-bold mb-4">Khách hàng đang chat</h3>
+        {customers.map(cust => (
+          <div
+            key={cust.userId}
+            className={`p-3 rounded cursor-pointer mb-2 hover:bg-blue-100 ${activeCustomer?.userId === cust.userId ? 'bg-blue-200 font-bold' : ''}`}
+            onClick={() => setActiveCustomer(cust)}
+          >
+            {cust.fullName || cust.username}
+          </div>
+        ))}
+      </div>
+      {/* Khung chat */}
+      <div className="flex-1 flex items-center justify-center">
+        {activeCustomer ? (
+          <ChatBox
+            supplierId={supplierId}
+            supplierName={supplierName}
+            customerId={activeCustomer.userId}
+            customerName={activeCustomer.fullName || activeCustomer.username}
+            onClose={() => setActiveCustomer(null)}
+          />
+        ) : (
+          <div className="text-gray-500 text-xl">Chọn khách hàng để bắt đầu chat</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SupplierChatManager;

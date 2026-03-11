@@ -1,0 +1,39 @@
+# .NET build artifacts
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+*.nupkg
+
+# Node / React
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Java (old)
+**/target/
+
+# Logs
+**/logs/
+*.log
+
+# Uploads
+**/uploads/
+
+# Sensitive files
+Account.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+*.iml
+
+# Debug/test scripts
+*.bat
+src/test-*.js
+*.gz
