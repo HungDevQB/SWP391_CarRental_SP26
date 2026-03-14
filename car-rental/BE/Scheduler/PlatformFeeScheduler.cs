@@ -1,3 +1,4 @@
+// PlatformFeeScheduler - automated background fee processing
 using CarRental.API.Data;
 using Microsoft.EntityFrameworkCore;
 
