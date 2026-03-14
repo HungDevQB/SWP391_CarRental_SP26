@@ -11,6 +11,9 @@ import {
 } from "@/services/api";
 import SignatureModal, { SignatureDisplay } from "@/components/common/SignatureModal";
 
+// Contract signing deadline (hours before trip start)
+const CONTRACT_SIGN_DEADLINE_HOURS = 24
+
 const statusConfig = {
   6:  { label: "Bản nháp",   color: "bg-yellow-100 text-yellow-800", icon: <FaClock /> },
   7:  { label: "Đã ký",      color: "bg-blue-100 text-blue-800",     icon: <FaSignature /> },
