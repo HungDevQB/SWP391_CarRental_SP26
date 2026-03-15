@@ -1,3 +1,4 @@
+// EmailService - SMTP email notifications for booking and auth events
 using CarRental.API.Services.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
