@@ -154,6 +154,26 @@ public class CarController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
+    [HttpGet("{id:int}/booked-dates")]
+    public async Task<IActionResult> GetBookedDates(int id)
+    {
+        var terminalStatuses = new[] { 4, 5, 22 };
+        var bookings = await _context.Bookings
+            .Where(b => b.CarId == id && !b.IsDeleted && !terminalStatuses.Contains(b.StatusId))
+            .Select(b => new { b.StartDate, b.EndDate })
+            .ToListAsync();
+
+        var bookedDates = new HashSet<string>();
+        foreach (var b in bookings)
+        {
+            for (var d = b.StartDate.Date; d < b.EndDate.Date; d = d.AddDays(1))
+                bookedDates.Add(d.ToString("yyyy-MM-dd"));
+        }
+
+        return Ok(new { bookedDates });
+    }
+
     [Authorize(Roles = "supplier,admin")]
     [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] string status)

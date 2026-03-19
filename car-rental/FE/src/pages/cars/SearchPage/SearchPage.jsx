@@ -1041,7 +1041,7 @@ const SearchPage = () => {
                             car.thumbnailUrl ||
                             car.images?.find((img) => img.isMain)?.imageUrl ||
                             car.images?.[0]?.imageUrl ||
-                            "https://via.placeholder.com/400x250?text=Car+Image"
+                            `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23e5e7eb'/%3E%3Cpath d='M120 160 L140 120 L180 110 L220 110 L260 120 L280 160 Z' fill='%239ca3af'/%3E%3Crect x='100' y='155' width='200' height='25' rx='5' fill='%236b7280'/%3E%3Ccircle cx='145' cy='185' r='18' fill='%234b5563'/%3E%3Ccircle cx='255' cy='185' r='18' fill='%234b5563'/%3E%3C%2Fsvg%3E`
                         }
                         alt={`${car.carModel || car.model}`}
                         className={`w-full h-full object-cover object-center transition-all duration-700 ${isHovered ? "scale-110" : "scale-100"
@@ -2310,7 +2310,7 @@ const SearchPage = () => {
                                                         car.thumbnailUrl ||
                                                         car.images?.find((img) => img.isMain)?.imageUrl ||
                                                         car.images?.[0]?.imageUrl ||
-                                                        "https://via.placeholder.com/300"
+                                                        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23e5e7eb'/%3E%3Cpath d='M80 180 L100 140 L140 128 L160 128 L200 140 L220 180 Z' fill='%239ca3af'/%3E%3Crect x='65' y='175' width='170' height='22' rx='4' fill='%236b7280'/%3E%3Ccircle cx='105' cy='200' r='16' fill='%234b5563'/%3E%3Ccircle cx='195' cy='200' r='16' fill='%234b5563'/%3E%3C%2Fsvg%3E`
                                                     }
                                                     alt={car.carModel || car.model}
                                                     className="w-16 h-16 object-cover rounded-xl shadow-lg group-hover:scale-110 transition-transform"

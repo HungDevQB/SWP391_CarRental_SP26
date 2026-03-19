@@ -108,19 +108,7 @@ const BookingModal = ({ isOpen, onClose, car, onSubmitBooking }) => {
       setBookedDates(data.bookedDates || [])
     } catch (err) {
       console.error("Error fetching booked dates:", err)
-      // Mock data fallback
-      const today = new Date()
-      const mockBookedDates = []
-
-
- 
-      for (let i = 1; i <= 3; i++) {
-        const date = new Date(today)
-        date.setDate(today.getDate() + i)
-        const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`
-        mockBookedDates.push(dateString)
-      }
-      setBookedDates(mockBookedDates)
+      setBookedDates([])
     } finally {
       setLoading(false)
     }

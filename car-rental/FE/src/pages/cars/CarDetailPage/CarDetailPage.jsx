@@ -592,7 +592,7 @@ const CarDetailPage = () => {
             className={`relative ${isZoomed ? "aspect-auto" : "aspect-[16/9]"} bg-gray-900 rounded-2xl overflow-hidden shadow-2xl transition-all duration-500`}
           >
             <img
-              src={car?.images?.[modalImageIndex]?.imageUrl || "https://via.placeholder.com/1200x675"}
+              src={car?.images?.[modalImageIndex]?.imageUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='675' viewBox='0 0 1200 675'%3E%3Crect width='1200' height='675' fill='%23e5e7eb'/%3E%3Cpath d='M350 440 L420 320 L530 295 L670 295 L780 320 L850 440 Z' fill='%239ca3af'/%3E%3Crect x='300' y='425' width='600' height='65' rx='12' fill='%236b7280'/%3E%3Ccircle cx='430' cy='510' r='52' fill='%234b5563'/%3E%3Ccircle cx='770' cy='510' r='52' fill='%234b5563'/%3E%3Ctext x='600' y='600' text-anchor='middle' fill='%236b7280' font-size='36' font-family='sans-serif'%3EKh%C3%B4ng c%C3%B3 %E1%BA%A3nh%3C%2Ftext%3E%3C%2Fsvg%3E`}
               alt={`${car?.model} Image ${modalImageIndex + 1}`}
               className={`w-full h-full transition-all duration-500 cursor-pointer ${
                 isZoomed ? "object-contain scale-150" : "object-contain hover:scale-105"
@@ -654,7 +654,7 @@ const CarDetailPage = () => {
                 }`}
               >
                 <img
-                  src={img.imageUrl || "https://via.placeholder.com/80x64"}
+                  src={img.imageUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='64' viewBox='0 0 80 64'%3E%3Crect width='80' height='64' fill='%23e5e7eb'/%3E%3Cpath d='M18 42 L24 28 L36 25 L44 25 L56 28 L62 42 Z' fill='%239ca3af'/%3E%3Crect x='14' y='39' width='52' height='10' rx='2' fill='%236b7280'/%3E%3Ccircle cx='26' cy='52' r='7' fill='%234b5563'/%3E%3Ccircle cx='54' cy='52' r='7' fill='%234b5563'/%3E%3C%2Fsvg%3E`}
                   alt={`Thumbnail ${idx + 1}`}
                   className="w-full h-full object-cover"
                   onLoad={() => handleImageLoad(idx)}
@@ -888,7 +888,7 @@ const CarDetailPage = () => {
                 </div>
               )}
               <img
-                src={mainImage?.imageUrl || "https://via.placeholder.com/800x600"}
+                src={mainImage?.imageUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23e5e7eb'/%3E%3Cpath d='M220 380 L270 275 L350 252 L450 252 L530 275 L580 380 Z' fill='%239ca3af'/%3E%3Crect x='195' y='365' width='410' height='50' rx='8' fill='%236b7280'/%3E%3Ccircle cx='285' cy='430' r='40' fill='%234b5563'/%3E%3Ccircle cx='515' cy='430' r='40' fill='%234b5563'/%3E%3Ctext x='400' y='520' text-anchor='middle' fill='%236b7280' font-size='28' font-family='sans-serif'%3EKh%C3%B4ng c%C3%B3 %E1%BA%A3nh%3C%2Ftext%3E%3C%2Fsvg%3E`}
                 alt={car.model + " Main Image"}
                 className="w-full h-full object-cover cursor-pointer"
                 onClick={() => setShowGalleryModal(true)}
@@ -944,7 +944,7 @@ const CarDetailPage = () => {
                     </div>
                   )}
                   <img
-                    src={img.imageUrl || "https://via.placeholder.com/80x64"}
+                    src={img.imageUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='64' viewBox='0 0 80 64'%3E%3Crect width='80' height='64' fill='%23e5e7eb'/%3E%3Cpath d='M18 42 L24 28 L36 25 L44 25 L56 28 L62 42 Z' fill='%239ca3af'/%3E%3Crect x='14' y='39' width='52' height='10' rx='2' fill='%236b7280'/%3E%3Ccircle cx='26' cy='52' r='7' fill='%234b5563'/%3E%3Ccircle cx='54' cy='52' r='7' fill='%234b5563'/%3E%3C%2Fsvg%3E`}
                     alt={`Thumbnail ${idx + 1}`}
                     className="w-full h-full object-cover"
                     onLoad={() => handleImageLoad(idx)}
@@ -960,7 +960,7 @@ const CarDetailPage = () => {
             <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fade-in">
               <div className="relative w-full max-w-5xl">
                 <img
-                  src={car?.images?.[activeImageIndex]?.imageUrl || "https://via.placeholder.com/1200x675"}
+                  src={car?.images?.[activeImageIndex]?.imageUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='675' viewBox='0 0 1200 675'%3E%3Crect width='1200' height='675' fill='%23e5e7eb'/%3E%3Cpath d='M350 440 L420 320 L530 295 L670 295 L780 320 L850 440 Z' fill='%239ca3af'/%3E%3Crect x='300' y='425' width='600' height='65' rx='12' fill='%236b7280'/%3E%3Ccircle cx='430' cy='510' r='52' fill='%234b5563'/%3E%3Ccircle cx='770' cy='510' r='52' fill='%234b5563'/%3E%3Ctext x='600' y='600' text-anchor='middle' fill='%236b7280' font-size='36' font-family='sans-serif'%3EKh%C3%B4ng c%C3%B3 %E1%BA%A3nh%3C%2Ftext%3E%3C%2Fsvg%3E`}
                   alt={`${car?.model} Image ${activeImageIndex + 1}`}
                   className="w-full h-auto max-h-[80vh] object-contain rounded-2xl shadow-2xl"
                   draggable={false}

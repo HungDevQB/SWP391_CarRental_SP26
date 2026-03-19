@@ -178,6 +178,7 @@ const getImageUrl = (url) => {
 const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavoriteChange }) => {
     const navigate = useNavigate();
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
 
     // Render star rating
@@ -234,21 +235,27 @@ const CarCard = ({ car, type = "default", isLoading = false, onBookNow, onFavori
     return (
         <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 border border-gray-100">
             <div className="relative h-64 overflow-hidden cursor-pointer">
-                {!imageLoaded && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse"></div>
+                {(!imageLoaded || imageError) && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7h1l2-3h2l2 3h1a2 2 0 012 2v7a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2z" />
+                            <circle cx="12" cy="13" r="2.5" strokeWidth={1} />
+                        </svg>
+                        {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />}
+                    </div>
                 )}
                 <img
                     src={
                         getImageUrl(car.thumbnailUrl) ||
                         getImageUrl(car.images?.find((img) => img.isMain)?.imageUrl) ||
-                        getImageUrl(car.images?.[0]?.imageUrl) ||
-                        "https://via.placeholder.com/400x250?text=Car+Image"
+                        getImageUrl(car.images?.[0]?.imageUrl)
                     }
                     alt={`${car.brandName} ${car.carModel || car.model}`}
-                    className={`w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-110 ${imageLoaded ? "opacity-100" : "opacity-0"
+                    className={`w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-110 ${imageLoaded && !imageError ? "opacity-100" : "opacity-0"
                         }`}
                     loading="lazy"
-                    onLoad={() => setImageLoaded(true)}
+                    onLoad={() => { setImageLoaded(true); setImageError(false); }}
+                    onError={() => { setImageLoaded(true); setImageError(true); }}
                     onClick={() => navigate(`/cars/${car.carId}`)}
                 />
 
