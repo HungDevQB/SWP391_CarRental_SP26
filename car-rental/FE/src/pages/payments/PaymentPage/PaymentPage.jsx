@@ -33,6 +33,10 @@ import {
 import { getItem } from '@/utils/auth'
 import Footer from '@/components/layout/Footer/Footer.jsx';
 
+// Payment configuration constants
+const PAYMENT_TIMEOUT_MINUTES = 15
+const MAX_PAYMENT_RETRIES = 3
+
 // Enhanced Progress Steps Component
 const ProgressSteps = ({ currentStep = 1 }) => {
   const steps = [
