@@ -1,3 +1,4 @@
+// ContractService - digital contract generation and signature management
 using CarRental.API.Data;
 using CarRental.API.DTOs.Booking;
 using CarRental.API.Models;
