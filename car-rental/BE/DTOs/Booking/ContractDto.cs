@@ -31,6 +31,12 @@ public class ContractDto
 
     // Customer license info for supplier to verify before signing
     public LicenseInfoDto? CustomerLicense { get; set; }
+
+    // Computed: true if both parties have signed
+    public bool IsFullySigned => SignedByCustomer && SignedBySupplier;
+
+    // Computed: days until contract expires
+    public int DaysRemaining => (EndDate.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days;
 }
 
 public class ContractListDto
