@@ -39,3 +39,4 @@ public class NotificationController : ControllerBase
         return Ok(ApiResponse<int>.Ok(count));
     }
 }
+
