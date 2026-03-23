@@ -1,4 +1,4 @@
-﻿create database CarRentalDB
+create database CarRentalDB
 -- 1. Tạo bảng CountryCode
 CREATE TABLE CountryCode (
     country_code VARCHAR(4) PRIMARY KEY CHECK (country_code LIKE '+[0-9]%'),
@@ -123,13 +123,25 @@ BEGIN
 END;
 GO
 
--- 9. Tạo bảng UserDetail
+-- 9. Tạo bảng UserDetail (khớp EF Core UserDetail.cs)
 CREATE TABLE UserDetail (
     user_id INT PRIMARY KEY,
-    name NVARCHAR(100) NOT NULL,
-    address NVARCHAR(200) NOT NULL,
-    taxcode VARCHAR(20),
-    is_deleted BIT DEFAULT 0,
+    name NVARCHAR(100) NULL,
+    address NVARCHAR(500) NULL,
+    taxcode VARCHAR(20) NULL,
+    date_of_birth DATETIME2 NULL,
+    gender NVARCHAR(10) NULL,
+    national_id NVARCHAR(50) NULL,
+    national_id_front_image NVARCHAR(500) NULL,
+    national_id_back_image NVARCHAR(500) NULL,
+    driving_license NVARCHAR(50) NULL,
+    driving_license_front_image NVARCHAR(500) NULL,
+    driving_license_back_image NVARCHAR(500) NULL,
+    avatar NVARCHAR(500) NULL,
+    is_verified BIT NOT NULL DEFAULT 0,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    is_deleted BIT NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES [User](user_id) ON DELETE CASCADE
 );
 GO
@@ -1933,28 +1945,28 @@ VALUES
     (N'PROMO15', 15.00, '2025-07-01', '2025-07-31', N'Giảm 15% cho khách VIP');
 GO
 
--- 19. Bảng Booking
-INSERT INTO Booking (customer_id, car_id, driver_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
+-- 19. Bảng Booking (booking_date <= start_date để thỏa CHK_Start_Date khi seed cố định)
+INSERT INTO Booking (customer_id, car_id, driver_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
 VALUES 
-    (3, 5, 1, 2, '2025-09-10', '2025-09-11', N'Hà Nội', N'Hải Phòng', 2, 5, 600000.00, 1),
-    (1, 6, 1, 1, '2025-09-10', '2025-09-11', N'Đà Nẵng', N'Hội An', 1, 7, 500000.00, 2),
-    (4, 7, 1, 3, '2025-09-10', '2025-09-11', N'Nha Trang', N'Cam Ranh', 2, 6, 450000.00, NULL),
-    (2, 8, 1, 1, '2025-09-10', '2025-09-11', N'Cần Thơ', N'Vĩnh Long', 1, 5, 350000.00, 3);
+    (3, 5, 1, 2, '2025-09-01', '2025-09-10', '2025-09-11', N'Hà Nội', N'Hải Phòng', 2, 5, 600000.00, 1),
+    (1, 6, 1, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'Đà Nẵng', N'Hội An', 1, 7, 500000.00, 2),
+    (4, 7, 1, 3, '2025-09-01', '2025-09-10', '2025-09-11', N'Nha Trang', N'Cam Ranh', 2, 6, 450000.00, NULL),
+    (2, 8, 1, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'Cần Thơ', N'Vĩnh Long', 1, 5, 350000.00, 3);
 GO
-INSERT INTO Booking (customer_id, car_id, driver_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
+INSERT INTO Booking (customer_id, car_id, driver_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
 VALUES 
-    (5, 9, 1, 2, '2025-09-10', '2025-09-11', N'Huế', N'Phong Điền', 1, 4, 400000.00, 1),
-    (3, 10, 1, 1, '2025-09-10', '2025-09-11', N'TP.HCM', N'Vũng Tàu', 2, 5, 550000.00, NULL),
-    (2, 11, 1, 3, '2025-09-10', '2025-09-11', N'Đà Lạt', N'Bảo Lộc', 1, 6, 450000.00, 2),
-    (1, 12, 1, 1, '2025-09-10', '2025-09-11', N'Hà Nội', N'Ninh Bình', 2, 7, 500000.00, 3),
-    (4, 13, 1, 2, '2025-09-10', '2025-09-11', N'Quảng Ninh', N'Hạ Long', 1, 5, 600000.00, NULL);
+    (5, 9, 1, 2, '2025-09-01', '2025-09-10', '2025-09-11', N'Huế', N'Phong Điền', 1, 4, 400000.00, 1),
+    (3, 10, 1, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'TP.HCM', N'Vũng Tàu', 2, 5, 550000.00, NULL),
+    (2, 11, 1, 3, '2025-09-01', '2025-09-10', '2025-09-11', N'Đà Lạt', N'Bảo Lộc', 1, 6, 450000.00, 2),
+    (1, 12, 1, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'Hà Nội', N'Ninh Bình', 2, 7, 500000.00, 3),
+    (4, 13, 1, 2, '2025-09-01', '2025-09-10', '2025-09-11', N'Quảng Ninh', N'Hạ Long', 1, 5, 600000.00, NULL);
 GO
-INSERT INTO Booking (customer_id, car_id, driver_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
+INSERT INTO Booking (customer_id, car_id, driver_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, promo_id)
 VALUES 
-    (3, 10, 2, 2, '2025-09-10', '2025-09-11', N'Hà Nội', N'Hải Dương', 2, 5, 450000.00, 1),
-    (4, 10, 3, 1, '2025-09-10', '2025-09-11', N'Đà Nẵng', N'Hội An', 1, 4, 500000.00, 2),
-    (5, 10, 2, 3, '2025-09-10', '2025-09-11', N'Nha Trang', N'Cam Ranh', 2, 5, 550000.00, NULL),
-    (1, 10, 2, 1, '2025-09-10', '2025-09-11', N'Cần Thơ', N'Rạch Giá', 1, 4, 400000.00, 3);
+    (3, 10, 2, 2, '2025-09-01', '2025-09-10', '2025-09-11', N'Hà Nội', N'Hải Dương', 2, 5, 450000.00, 1),
+    (4, 10, 3, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'Đà Nẵng', N'Hội An', 1, 4, 500000.00, 2),
+    (5, 10, 2, 3, '2025-09-01', '2025-09-10', '2025-09-11', N'Nha Trang', N'Cam Ranh', 2, 5, 550000.00, NULL),
+    (1, 10, 2, 1, '2025-09-01', '2025-09-10', '2025-09-11', N'Cần Thơ', N'Rạch Giá', 1, 4, 400000.00, 3);
 GO
 
 -- 20. Bảng BookingFinancials
@@ -2518,119 +2530,47 @@ INSERT INTO registration_requests (
     GETDATE()
 );
 
-  UPDATE registration_requests SET status = 'approved' WHERE id = 1;
+  UPDATE registration_requests SET status = 'approved' WHERE email = N'nguyenvand@example.com';
 
+-- Demo booking theo tháng: booking_date/start/end thỏa CHK_Start_Date và end_date > start_date (tránh trùng BookingFinancials với seed phía trên)
 -- Tháng 3 trước: 1 booking cho mỗi xe
-INSERT INTO Booking (customer_id, car_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
+INSERT INTO Booking (customer_id, car_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
 VALUES
-(101, 5, 1, DATEADD(MONTH, -3, GETDATE()), DATEADD(MONTH, -3, GETDATE()), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -3, GETDATE())),
-(201, 16, 1, DATEADD(MONTH, -3, GETDATE()), DATEADD(MONTH, -3, GETDATE()), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -3, GETDATE()));
+(101, 5, 1, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE))),
+(201, 16, 1, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -3, CAST(GETDATE() AS DATE)));
 
 -- Tháng 2 trước: 2 booking cho mỗi xe
-INSERT INTO Booking (customer_id, car_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
+INSERT INTO Booking (customer_id, car_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
 VALUES
-(102, 5, 1, DATEADD(MONTH, -2, GETDATE()), DATEADD(MONTH, -2, GETDATE()), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -2, GETDATE())),
-(103, 5, 1, DATEADD(MONTH, -2, GETDATE()) + 1, DATEADD(MONTH, -2, GETDATE()) + 1, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -2, GETDATE()) + 1),
-(202, 16, 1, DATEADD(MONTH, -2, GETDATE()), DATEADD(MONTH, -2, GETDATE()), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -2, GETDATE())),
-(203, 16, 1, DATEADD(MONTH, -2, GETDATE()) + 1, DATEADD(MONTH, -2, GETDATE()) + 1, N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -2, GETDATE()) + 1);
+(102, 5, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))),
+(103, 5, 1, DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)))),
+(202, 16, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))),
+(203, 16, 1, DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 1, DATEADD(MONTH, -2, CAST(GETDATE() AS DATE)))));
 
 -- Tháng trước: 3 booking cho mỗi xe
-INSERT INTO Booking (customer_id, car_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
+INSERT INTO Booking (customer_id, car_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
 VALUES
-(104, 5, 1, DATEADD(MONTH, -1, GETDATE()), DATEADD(MONTH, -1, GETDATE()), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE())),
-(105, 5, 1, DATEADD(MONTH, -1, GETDATE()) + 1, DATEADD(MONTH, -1, GETDATE()) + 1, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE()) + 1),
-(106, 5, 1, DATEADD(MONTH, -1, GETDATE()) + 2, DATEADD(MONTH, -1, GETDATE()) + 2, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE()) + 2),
-(204, 16, 1, DATEADD(MONTH, -1, GETDATE()), DATEADD(MONTH, -1, GETDATE()), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE())),
-(205, 16, 1, DATEADD(MONTH, -1, GETDATE()) + 1, DATEADD(MONTH, -1, GETDATE()) + 1, N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE()) + 1),
-(206, 16, 1, DATEADD(MONTH, -1, GETDATE()) + 2, DATEADD(MONTH, -1, GETDATE()) + 2, N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -1, GETDATE()) + 2);
+(104, 5, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))),
+(105, 5, 1, DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))),
+(106, 5, 1, DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 3, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))),
+(204, 16, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)), DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))),
+(205, 16, 1, DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))),
+(206, 16, 1, DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), DATEADD(DAY, 3, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 2, DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))));
 
 -- Tháng này: 4 booking cho mỗi xe
-INSERT INTO Booking (customer_id, car_id, region_id, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
+INSERT INTO Booking (customer_id, car_id, region_id, booking_date, start_date, end_date, pickup_location, dropoff_location, status_id, seat_number, deposit_amount, created_at)
 VALUES
-(107, 5, 1, GETDATE(), GETDATE(), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, GETDATE()),
-(108, 5, 1, GETDATE() + 1, GETDATE() + 1, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, GETDATE() + 1),
-(109, 5, 1, GETDATE() + 2, GETDATE() + 2, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, GETDATE() + 2),
-(110, 5, 1, GETDATE() + 3, GETDATE() + 3, N'Hà Nội', N'Hải Phòng', 4, 5, 500000, GETDATE() + 3),
-(207, 16, 1, GETDATE(), GETDATE(), N'Hà Nội', N'Hải Dương', 4, 5, 500000, GETDATE()),
-(208, 16, 1, GETDATE() + 1, GETDATE() + 1, N'Hà Nội', N'Hải Dương', 4, 5, 500000, GETDATE() + 1),
-(209, 16, 1, GETDATE() + 2, GETDATE() + 2, N'Hà Nội', N'Hải Dương', 4, 5, 500000, GETDATE() + 2),
-(210, 16, 1, GETDATE() + 3, GETDATE() + 3, N'Hà Nội', N'Hải Dương', 4, 5, 500000, GETDATE() + 3);
+(107, 5, 1, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, CAST(GETDATE() AS DATE)),
+(108, 5, 1, DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 1, CAST(GETDATE() AS DATE))),
+(109, 5, 1, DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 2, CAST(GETDATE() AS DATE))),
+(110, 5, 1, DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 4, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Phòng', 4, 5, 500000, DATEADD(DAY, 3, CAST(GETDATE() AS DATE))),
+(207, 16, 1, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Dương', 4, 5, 500000, CAST(GETDATE() AS DATE)),
+(208, 16, 1, DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 1, CAST(GETDATE() AS DATE))),
+(209, 16, 1, DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 2, CAST(GETDATE() AS DATE))),
+(210, 16, 1, DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 3, CAST(GETDATE() AS DATE)), DATEADD(DAY, 4, CAST(GETDATE() AS DATE)), N'Hà Nội', N'Hải Dương', 4, 5, 500000, DATEADD(DAY, 3, CAST(GETDATE() AS DATE)));
 
--- BookingFinancials cho car_id = 5
 INSERT INTO BookingFinancials (booking_id, total_fare, applied_discount, late_fee_amount, late_days, is_deleted)
-VALUES
-(1, 1500000, 0, 0, 0, 0),
-(2, 1550000, 0, 0, 0, 0),
-(3, 1600000, 0, 0, 0, 0),
-(4, 1650000, 0, 0, 0, 0),
-(5, 1700000, 0, 0, 0, 0),
-(6, 1750000, 0, 0, 0, 0),
-(7, 1800000, 0, 0, 0, 0),
-(8, 1850000, 0, 0, 0, 0),
-(9, 1900000, 0, 0, 0, 0),
-(10, 1950000, 0, 0, 0, 0);
-
--- BookingFinancials cho car_id = 16
-INSERT INTO BookingFinancials (booking_id, total_fare, applied_discount, late_fee_amount, late_days, is_deleted)
-VALUES
-(11, 2000000, 0, 0, 0, 0),
-(12, 2050000, 0, 0, 0, 0),
-(13, 2100000, 0, 0, 0, 0),
-(14, 2150000, 0, 0, 0, 0),
-(15, 2200000, 0, 0, 0, 0),
-(16, 2250000, 0, 0, 0, 0),
-(17, 2300000, 0, 0, 0, 0),
-(18, 2350000, 0, 0, 0, 0),
-(19, 2400000, 0, 0, 0, 0),
-(20, 2450000, 0, 0, 0, 0);
-
--- Ví dụ cho booking_id = 1 (car_id=5)
-INSERT INTO Payment (booking_id, amount, region_id, payment_method, payment_status_id, payment_type, payment_date)
-VALUES
-(1, 500000, 1, 'cash', 15, 'deposit', DATEADD(MINUTE, 1, (SELECT created_at FROM Booking WHERE booking_id=1))),
-(1, 1000000, 1, 'momo', 15, 'full_payment', DATEADD(MINUTE, 2, (SELECT created_at FROM Booking WHERE booking_id=1))),
-(1, 100000, 1, 'vnpay', 15, 'refund', DATEADD(MINUTE, 3, (SELECT created_at FROM Booking WHERE booking_id=1))),
-(1, 1400000, 1, 'cash', 15, 'payout', DATEADD(MINUTE, 4, (SELECT created_at FROM Booking WHERE booking_id=1)));
-
--- Lặp lại cho tất cả booking_id còn lại (2-20), chỉ cần thay số tiền, phương thức, payment_date cho đa dạng.
-
-DECLARE @i INT = 0, @month INT, @booking_id INT, @car_id INT, @customer_id INT;
-SET @car_id = 16; -- hoặc 16
-SET @customer_id = 70; -- tăng dần cho mỗi booking
-
-WHILE @i < 6
-BEGIN
-    SET @month = -6 + @i;
-    INSERT INTO Booking (
-        customer_id, car_id, region_id, start_date, end_date, 
-        pickup_location, dropoff_location, status_id, seat_number, 
-        deposit_amount, created_at,
-        supplier_delivery_confirm, customer_receive_confirm, 
-        customer_return_confirm, supplier_return_confirm
-    )
-    VALUES (
-        @customer_id + @i, @car_id, 1, 
-        DATEADD(MONTH, @month, GETDATE()), 
-        DATEADD(MONTH, @month, GETDATE()) + 1, 
-        N'Hà Nội', N'Hải Phòng', 4, 5, 500000, 
-        DATEADD(MONTH, @month, GETDATE()),
-        1, 1, 1, 1  -- 4 cột confirm đều = 1
-    );
-
-    SET @booking_id = SCOPE_IDENTITY();
-
-    INSERT INTO BookingFinancials (booking_id, total_fare, applied_discount, late_fee_amount, late_days, is_deleted)
-    VALUES (@booking_id, 1500000 + @i * 50000, 0, 0, 0, 0);
-
-    INSERT INTO Payment (booking_id, amount, region_id, payment_method, payment_status_id, payment_type, payment_date)
-    VALUES
-    (@booking_id, 500000, 1, 'cash', 15, 'deposit', DATEADD(MINUTE, 1, (SELECT created_at FROM Booking WHERE booking_id=@booking_id))),
-    (@booking_id, 1000000, 1, 'momo', 15, 'full_payment', DATEADD(MINUTE, 2, (SELECT created_at FROM Booking WHERE booking_id=@booking_id))),
-    (@booking_id, 100000, 1, 'vnpay', 15, 'refund', DATEADD(MINUTE, 3, (SELECT created_at FROM Booking WHERE booking_id=@booking_id))),
-    (@booking_id, 1400000, 1, 'cash', 15, 'payout', DATEADD(MINUTE, 4, (SELECT created_at FROM Booking WHERE booking_id=@booking_id)));
-
-    SET @i = @i + 1;
-END
--- Bỏ điều kiện CHECK CHK_Start_Date
-ALTER TABLE Booking DROP CONSTRAINT CHK_Start_Date;
-select * from Booking
+SELECT b.booking_id, 1500000 + (b.booking_id % 10) * 50000, 0, 0, 0, 0
+FROM Booking b
+WHERE NOT EXISTS (SELECT 1 FROM BookingFinancials f WHERE f.booking_id = b.booking_id);
+GO

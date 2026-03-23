@@ -32,7 +32,7 @@ CREATE TABLE registration_requests (
     address          NVARCHAR(255),
     phone_number     VARCHAR(20),
     email            VARCHAR(255),
-    password         VARCHAR(255) NULL,
+    password         VARCHAR(255) NOT NULL,
     car_documents    VARCHAR(255),   -- URL/path file
     business_license VARCHAR(255),   -- URL/path file
     driver_license   VARCHAR(255),   -- URL/path file

@@ -1,0 +1,66 @@
+@use '_variables' as *;
+
+@mixin hover-scale {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+// src/styles/_mixins.scss
+@mixin button-style($bg-color: #4682B4, $text-color: #ffffff) { // Thay $primary-blue và $text-light bằng giá trị cụ thể
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  color: $text-color;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+@mixin button-style($bg-color: $primary-blue, $text-color: $text-light) {
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: $border-radius-md;
+  background-color: $bg-color;
+  color: $text-color;
+  cursor: pointer;
+  transition: $transition-base;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+@mixin card-style {
+  background-color: $white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: $shadow-sm;
+  @include hover-scale;
+}
+
+@mixin flex($direction: row, $justify: flex-start, $align: stretch) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin responsive($breakpoint) {
+  @if $breakpoint == tablet {
+    @media (max-width: 768px) {
+      @content;
+    }
+  } @else if $breakpoint == mobile {
+    @media (max-width: 480px) {
+      @content;
+    }
+  }
+}

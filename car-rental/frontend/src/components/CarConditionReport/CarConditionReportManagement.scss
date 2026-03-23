@@ -1,0 +1,520 @@
+.car-condition-report-management {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 24px;
+
+    .page-header {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+
+                .header-icon {
+                    width: 60px;
+                    height: 60px;
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    border-radius: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 24px;
+                }
+
+                .header-text {
+                    h1 {
+                        margin: 0 0 8px 0;
+                        color: #1e293b;
+                        font-size: 2rem;
+                        font-weight: 700;
+                    }
+
+                    p {
+                        margin: 0;
+                        color: #64748b;
+                        font-size: 1.1rem;
+                    }
+                }
+            }
+
+            .export-btn {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+                }
+            }
+        }
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            }
+
+            .stat-icon {
+                width: 60px;
+                height: 60px;
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+
+                &.total {
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    color: white;
+                }
+
+                &.pending {
+                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                    color: white;
+                }
+
+                &.confirmed {
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    color: white;
+                }
+
+                &.damage {
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    color: white;
+                }
+            }
+
+            .stat-content {
+                .stat-number {
+                    font-size: 2.5rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                    line-height: 1;
+                    margin-bottom: 4px;
+                }
+
+                .stat-label {
+                    color: #64748b;
+                    font-weight: 500;
+                    font-size: 1rem;
+                }
+            }
+        }
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 150px;
+
+                label {
+                    font-weight: 600;
+                    color: #374151;
+                    font-size: 0.9rem;
+                }
+
+                select {
+                    padding: 10px 12px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    transition: all 0.3s ease;
+
+                    &:focus {
+                        outline: none;
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                    }
+                }
+            }
+
+            .search-group {
+                display: flex;
+                align-items: center;
+                position: relative;
+                flex: 1;
+                max-width: 400px;
+
+                svg {
+                    position: absolute;
+                    left: 12px;
+                    color: #9ca3af;
+                    font-size: 16px;
+                }
+
+                input {
+                    width: 100%;
+                    padding: 10px 12px 10px 40px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    transition: all 0.3s ease;
+
+                    &:focus {
+                        outline: none;
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                    }
+
+                    &::placeholder {
+                        color: #9ca3af;
+                    }
+                }
+            }
+        }
+    }
+
+    .reports-section {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+        .loading-container, .error-container, .empty-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #6b7280;
+
+            .empty-icon, .error-icon {
+                font-size: 4rem;
+                margin-bottom: 20px;
+                opacity: 0.5;
+            }
+
+            h3 {
+                font-size: 1.5rem;
+                margin-bottom: 10px;
+                color: #374151;
+            }
+
+            p {
+                font-size: 1rem;
+                opacity: 0.8;
+                text-align: center;
+                max-width: 500px;
+            }
+        }
+
+        .table-container {
+            overflow-x: auto;
+
+            .reports-table {
+                width: 100%;
+                border-collapse: collapse;
+
+                thead {
+                    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+                    color: white;
+
+                    th {
+                        padding: 16px 12px;
+                        text-align: left;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        white-space: nowrap;
+                    }
+                }
+
+                tbody {
+                    tr {
+                        border-bottom: 1px solid #f1f5f9;
+                        transition: all 0.3s ease;
+
+                        &:hover {
+                            background: #f8fafc;
+                        }
+
+                        td {
+                            padding: 16px 12px;
+                            vertical-align: middle;
+
+                            .booking-id {
+                                font-family: 'Monaco', 'Menlo', monospace;
+                                background: #f1f5f9;
+                                padding: 4px 8px;
+                                border-radius: 6px;
+                                font-size: 0.85rem;
+                                font-weight: 600;
+                                color: #1e40af;
+                            }
+
+                            .car-info {
+                                .car-name {
+                                    font-weight: 600;
+                                    color: #1e293b;
+                                    margin-bottom: 2px;
+                                }
+
+                                .car-plate {
+                                    font-size: 0.8rem;
+                                    color: #64748b;
+                                }
+                            }
+
+                            .reporter-info {
+                                .reporter-name {
+                                    font-weight: 500;
+                                    color: #1e293b;
+                                    margin-bottom: 2px;
+                                }
+
+                                .reporter-type {
+                                    font-size: 0.8rem;
+                                    color: #64748b;
+                                }
+                            }
+
+                            .condition-summary {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+
+                                .damage-indicator {
+                                    color: #ef4444;
+                                    font-size: 0.8rem;
+                                }
+                            }
+
+                            .date-info {
+                                .time {
+                                    font-size: 0.8rem;
+                                    color: #64748b;
+                                    margin-top: 2px;
+                                }
+                            }
+
+                            .action-buttons {
+                                display: flex;
+                                gap: 8px;
+
+                                .action-btn {
+                                    width: 36px;
+                                    height: 36px;
+                                    border: none;
+                                    border-radius: 8px;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    transition: all 0.3s ease;
+
+                                    &.view {
+                                        background: #dbeafe;
+                                        color: #1d4ed8;
+
+                                        &:hover {
+                                            background: #bfdbfe;
+                                            transform: scale(1.1);
+                                        }
+                                    }
+
+                                    &.confirm {
+                                        background: #dcfce7;
+                                        color: #166534;
+
+                                        &:hover {
+                                            background: #bbf7d0;
+                                            transform: scale(1.1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+            border-top: 1px solid #f1f5f9;
+
+            .pagination-btn {
+                background: #3b82f6;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+
+                &:hover:not(:disabled) {
+                    background: #1d4ed8;
+                    transform: translateY(-2px);
+                }
+
+                &:disabled {
+                    background: #e5e7eb;
+                    color: #9ca3af;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+            }
+
+            .pagination-info {
+                font-weight: 500;
+                color: #374151;
+            }
+        }
+    }
+}
+
+// Status and type badges
+.status-badge, .type-badge, .condition-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge {
+    &.confirmed {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    &.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+}
+
+.type-badge {
+    &.pickup {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    &.return {
+        background: #fed7d7;
+        color: #c53030;
+    }
+}
+
+.condition-badge {
+    &.excellent {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    &.good {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    &.fair {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    &.poor {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+}
+
+// Responsive design
+@media (max-width: 1024px) {
+    .car-condition-report-management {
+        padding: 16px;
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .filters-row {
+            flex-direction: column;
+            gap: 16px;
+
+            .filter-group, .search-group {
+                width: 100%;
+                max-width: none;
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .car-condition-report-management {
+        .page-header .header-content {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+
+            .header-left {
+                text-align: center;
+            }
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .reports-table {
+            font-size: 0.8rem;
+
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    }
+} 

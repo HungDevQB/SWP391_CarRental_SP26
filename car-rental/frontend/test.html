@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Connection</title>
+</head>
+<body>
+    <h1>Test Connection</h1>
+    <button onclick="testConnection()">Test Basic Connection</button>
+    <button onclick="testAuth()">Test Auth Connection</button>
+    <div id="results"></div>
+
+    <script>
+        async function testConnection() {
+            try {
+                console.log('Testing basic connection...');
+                const response = await fetch('http://localhost:8080/api/bookings/test');
+                const data = await response.text();
+                console.log('Success:', data);
+                document.getElementById('results').innerHTML = `<div style="color: green;">Success: ${data}</div>`;
+            } catch (error) {
+                console.error('Failed:', error);
+                document.getElementById('results').innerHTML = `<div style="color: red;">Failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testAuth() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    document.getElementById('results').innerHTML = `<div style="color: red;">No token found</div>`;
+                    return;
+                }
+
+                console.log('Testing auth connection...');
+                const response = await fetch('http://localhost:8080/api/bookings/test-auth', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.text();
+                console.log('Success:', data);
+                document.getElementById('results').innerHTML = `<div style="color: green;">Success: ${data}</div>`;
+            } catch (error) {
+                console.error('Failed:', error);
+                document.getElementById('results').innerHTML = `<div style="color: red;">Failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

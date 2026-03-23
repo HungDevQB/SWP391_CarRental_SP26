@@ -1,0 +1,209 @@
+.bank-account-manager {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  // ✅ EMBEDDED MODE STYLES
+  &.embedded {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    max-width: none;
+    
+    // Remove extra padding/margins for embedded use
+    .p-6 {
+      padding: 1.5rem 0;
+    }
+    
+    // Compact stats layout
+    .grid.grid-cols-1.md \:grid-cols-3 {
+      gap: 1rem;
+      margin-bottom: 2rem;
+      
+      .bg-white {
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        
+        .text-3xl {
+          font-size: 1.75rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .text-gray-600 {
+          font-size: 0.875rem;
+        }
+      }
+    }
+    
+    // Adjust form modal for embedded context
+    .fixed.inset-0 {
+      z-index: 60; // Higher z-index for supplier profile context
+    }
+  }
+
+  // Custom scrollbar cho modal
+  .overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+
+      &:hover {
+        background: #94a3b8;
+      }
+    }
+  }
+
+  // Animation cho card hover
+  .bg-white {
+    &.rounded-2xl {
+      &.shadow-lg {
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+
+  // Primary account glow effect
+  .border-yellow-400 {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #fbbf24, #f59e0b, #d97706);
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0.1;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+  }
+
+  @keyframes glow {
+    from {
+      opacity: 0.1;
+    }
+    to {
+      opacity: 0.3;
+    }
+  }
+
+  // Form validation styles
+  .border-red-300 {
+    border-color: #fca5a5;
+    box-shadow: 0 0 0 3px rgba(252, 165, 165, 0.1);
+  }
+
+  // Button hover effects
+  button {
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // Modal backdrop
+  .fixed.inset-0.bg-black.bg-opacity-50 {
+    backdrop-filter: blur(4px);
+  }
+
+  // Input focus effects
+  input, select, textarea {
+    transition: all 0.2s ease;
+
+    &:focus {
+      transform: scale(1.02);
+    }
+  }
+
+  // Badge animations
+  .rounded-full {
+    animation: fadeInUp 0.3s ease;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    margin: 1rem;
+    border-radius: 1rem;
+
+    .p-8 {
+      padding: 1.5rem;
+    }
+
+    .text-4xl {
+      font-size: 2rem;
+    }
+
+    .grid-cols-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .flex-row {
+      flex-direction: column;
+    }
+
+    .text-xl {
+      font-size: 1.125rem;
+    }
+  }
+}
+
+// Specific styles for supplier profile integration
+.supplier-banking-section {
+  .bank-account-wrapper {
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    
+    .bank-account-manager.embedded {
+      background: transparent;
+    }
+  }
+}
