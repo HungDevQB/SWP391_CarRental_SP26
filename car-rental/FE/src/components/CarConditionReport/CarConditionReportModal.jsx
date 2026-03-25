@@ -3,6 +3,10 @@ import { toast } from 'react-toastify';
 import { createCarConditionReport } from '@/services/api';
 import './CarConditionReportModal.scss';
 
+// Condition grades used in inspection form
+const CONDITION_GRADES = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR', 'DAMAGED']
+const DEFAULT_FUEL_LEVEL = 100
+
 const CarConditionReportModal = ({ 
     isOpen, 
     onClose, 
