@@ -81,3 +81,4 @@ public class BookingRepository : BaseRepository<Booking>, IBookingRepository
                                    b.StartDate < endDate &&
                                    b.EndDate > startDate);
 }
+
