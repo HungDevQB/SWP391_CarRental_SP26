@@ -59,6 +59,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<CloudinaryService>();
+builder.Services.AddScoped<ICarAdvisorService, CarAdvisorService>();
+builder.Services.AddHttpClient();
 
 // ── Background Services ───────────────────────────────────────────────────────
 builder.Services.AddHostedService<PlatformFeeScheduler>();

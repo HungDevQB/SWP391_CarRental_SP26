@@ -62,7 +62,6 @@ import Footer from '@/components/layout/Footer/Footer';
 import { getItem } from '@/utils/auth';
 import TestimonialCarousel from '@/components/features/Rating/TestimonialCarousel';
 import LoadingSpinner from '@/components/ui/Loading/LoadingSpinner.jsx';
-import CozeChatbot from '@/components/Common/CozeChatbot.jsx';
 
 
 // Images
@@ -1337,8 +1336,7 @@ const HomePage = () => {
                 onSubmitBooking={handleSubmitBooking}
             />
 
-            <CozeChatbot />
-
+            
         </div>
     )
 }
