@@ -30,7 +30,7 @@ const getActiveVehiclesCount = (summary) => {
 };
 
 // Helper: Lấy tên xe hợp lệ
-const getCarModel = (order) => order.car?.model || order.vehicle?.model || order.model || null;
+const getCarModel = (order) => order.carModel || order.car?.model || order.car?.carModel || order.vehicle?.model || order.model || null;
 
 // Helper: Tính phần trăm tăng/giảm cho mảng số liệu (giá trị cuối so với liền trước)
 const getPercentChange = (arr) => {
@@ -161,25 +161,18 @@ const SupplierReport = () => {
         );
         setCustomersLastMonth(customerIdsLastMonth.size);
 
-        // Calculate car performance stats (CHỈ TÍNH BOOKING ĐÃ PAYOUT)
-        const paidOrders = ordersData?.filter(order => {
-          if (order.payoutStatus) {
-            return order.payoutStatus === 'completed';
-          }
-          if (order.paymentDetails && Array.isArray(order.paymentDetails)) {
-            return order.paymentDetails.some(
-              p => p.paymentType === 'payout' && p.paymentStatus === 'paid'
-            );
-          }
-          return false;
-        }) || [];
+        // Calculate car performance stats (tính tất cả đơn không bị huỷ)
+        const paidOrders = (ordersData || []).filter(order => {
+          const status = (order.statusName || '').toLowerCase();
+          return status !== 'cancelled' && status !== 'pending';
+        });
 
         const carBookingCount = {};
         const carRevenueCount = {};
         paidOrders.forEach(order => {
           const carModel = getCarModel(order);
           if (!carModel) return; // Bỏ qua nếu không xác định được model
-          const revenue = order.totalAmount || 0;
+          const revenue = order.totalPrice || order.totalAmount || 0;
           carBookingCount[carModel] = (carBookingCount[carModel] || 0) + 1;
           carRevenueCount[carModel] = (carRevenueCount[carModel] || 0) + revenue;
         });
@@ -615,30 +608,30 @@ const SupplierReport = () => {
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                       >
                         <td className="py-3 px-4">
-                          <div className="font-medium text-gray-800">{order.car?.model || 'N/A'}</div>
+                          <div className="font-medium text-gray-800">{order.carModel || order.car?.model || order.car?.carModel || 'N/A'}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-medium text-gray-800">{order.customer?.userDetail?.fullName || order.customer?.name || order.customerName || 'N/A'}</div>
+                          <div className="font-medium text-gray-800">{order.customerName || order.customer?.fullName || order.customer?.userDetail?.fullName || 'N/A'}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-sm text-gray-600">
-                            {order.pickupDateTime
-                              ? new Date(order.pickupDateTime).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                              : order.startDate
-                                ? new Date(order.startDate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            {order.startDate
+                              ? new Date(order.startDate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                              : order.pickupDateTime
+                                ? new Date(order.pickupDateTime).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                                 : 'N/A'}
                           </div>
                     </td>
                     <td className="py-3 px-4">
                       <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm border-2 text-center min-w-[100px] transition-all
-                        ${getStatusColor(order.status?.statusName || order.statusName || '')}
+                        ${getStatusColor(order.statusName || order.status?.statusName || '')}
                       `}>
-                        {getStatusLabel(order.status?.statusName || order.statusName || '')}
+                        {getStatusLabel(order.statusName || order.status?.statusName || '')}
                       </span>
                     </td>
                         <td className="py-3 px-4">
                           <div className="font-bold text-green-600">
-                            {(order.totalAmount || order.totalFare || 0).toLocaleString('vi-VN')} VNĐ
+                            {(order.totalPrice || order.totalAmount || order.totalFare || 0).toLocaleString('vi-VN')} VNĐ
                           </div>
                     </td>
                       </motion.tr>

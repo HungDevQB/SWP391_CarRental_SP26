@@ -15,15 +15,18 @@ public class BookingService : IBookingService
     private readonly ApplicationDbContext _context;
     private readonly INotificationService _notification;
     private readonly IEmailService _email;
+    private readonly IContractService _contractService;
 
     public BookingService(IBookingRepository bookingRepo, ICarRepository carRepo,
-        ApplicationDbContext context, INotificationService notification, IEmailService email)
+        ApplicationDbContext context, INotificationService notification, IEmailService email,
+        IContractService contractService)
     {
         _bookingRepo = bookingRepo;
         _carRepo = carRepo;
         _context = context;
         _notification = notification;
         _email = email;
+        _contractService = contractService;
     }
 
     public async Task<BookingDto?> GetByIdAsync(int bookingId)
@@ -56,8 +59,30 @@ public class BookingService : IBookingService
         var car = await _carRepo.GetWithDetailsAsync(request.CarId)
             ?? throw new KeyNotFoundException("Xe không tồn tại");
 
-        if (car.StatusId != 11) // 11 = available
+        var availableStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "available");
+        if (availableStatus != null && car.StatusId != availableStatus.StatusId)
             throw new InvalidOperationException("Xe không có sẵn để đặt");
+
+        // Auto-cancel stale pending bookings from this customer for this car
+        // (happens when user clicks confirm multiple times without completing payment)
+        var pendingStatusForCleanup = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "pending");
+        var cancelledStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "cancelled");
+        if (pendingStatusForCleanup != null && cancelledStatus != null)
+        {
+            var stalePending = await _context.Bookings
+                .Where(b => b.CarId == request.CarId &&
+                            b.CustomerId == customerId &&
+                            b.StatusId == pendingStatusForCleanup.StatusId &&
+                            !b.IsDeleted)
+                .ToListAsync();
+            foreach (var stale in stalePending)
+            {
+                stale.StatusId = cancelledStatus.StatusId;
+                stale.UpdatedAt = DateTime.UtcNow;
+            }
+            if (stalePending.Count > 0)
+                await _context.SaveChangesAsync();
+        }
 
         var isAvailable = await _carRepo.IsAvailableAsync(request.CarId, request.StartDate, request.EndDate);
         if (!isAvailable)
@@ -131,28 +156,15 @@ public class BookingService : IBookingService
             throw;
         }
 
+        // Auto-generate contract for this booking (non-blocking)
+        try { await _contractService.GenerateContractAsync(booking.BookingId, car.SupplierId); }
+        catch { /* ignore contract errors - booking still valid */ }
+
         // Notify supplier (non-blocking)
         try { await _notification.SendAsync(car.SupplierId, $"Đơn đặt xe mới #{booking.BookingId}", "in_app"); }
         catch { /* ignore */ }
 
-        // Send confirmation email to customer (non-blocking)
-        try
-        {
-            var customer = await _context.Users.FindAsync(customerId);
-            if (customer?.Email != null)
-            {
-                var carInfo = $"{car.CarBrand?.BrandName} {car.CarModel}";
-                await _email.SendBookingConfirmationAsync(
-                    customer.Email,
-                    customer.Username ?? customer.Email,
-                    booking.BookingId,
-                    booking.StartDate,
-                    booking.EndDate,
-                    carInfo,
-                    totalPrice);
-            }
-        }
-        catch { /* ignore email errors */ }
+        // Email xác nhận sẽ được gửi sau khi thanh toán thành công (trong PaymentService)
 
         return (await GetByIdAsync(booking.BookingId))!;
     }
@@ -307,6 +319,7 @@ public class BookingService : IBookingService
         CarModel = b.Car?.CarModel,
         CarBrand = b.Car?.CarBrand?.BrandName,
         CarThumbnail = b.Car?.Images.FirstOrDefault()?.ImageUrl,
+        CustomerName = b.Customer?.FullName ?? b.Customer?.Username,
         StartDate = b.StartDate,
         EndDate = b.EndDate,
         TotalPrice = b.BookingFinancial?.TotalFare ?? 0,

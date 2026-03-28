@@ -27,7 +27,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5277';
+
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const OwnerRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -39,8 +44,9 @@ const OwnerRequests = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/registration-requests`);
-      setRequests(res.data);
+      const res = await axios.get(`${BASE_URL}/api/registration-requests`, { headers: authHeader() });
+      const data = res.data;
+      setRequests(Array.isArray(data) ? data : (data?.data ?? []));
     } catch (err) {
       toast.error("Không thể tải danh sách yêu cầu");
     } finally {
@@ -55,7 +61,7 @@ const OwnerRequests = () => {
   const handleApprove = async (id) => {
     setActionLoading(true);
     try {
-      await axios.post(`${BASE_URL}/api/registration-requests/${id}/approve`);
+      await axios.post(`${BASE_URL}/api/registration-requests/${id}/approve`, {}, { headers: authHeader() });
       toast.success("Đã duyệt yêu cầu!");
       fetchRequests();
       setSelected(null);
@@ -71,7 +77,7 @@ const OwnerRequests = () => {
   const handleReject = async (id) => {
     setActionLoading(true);
     try {
-      await axios.post(`${BASE_URL}/api/registration-requests/${id}/reject`);
+      await axios.post(`${BASE_URL}/api/registration-requests/${id}/reject`, {}, { headers: authHeader() });
       toast.success("Đã từ chối yêu cầu!");
       fetchRequests();
       setSelected(null);
@@ -84,9 +90,9 @@ const OwnerRequests = () => {
 
   const renderFileLink = (filePath, label) => {
     if (!filePath) return null;
-    const url = `${BASE_URL}/${filePath}`;
-    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(filePath);
-    const isPdf = /\.pdf$/i.test(filePath);
+    const url = filePath.startsWith('http') ? filePath : `${BASE_URL}/${filePath}`;
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)(\?.*)?$/i.test(url) || url.includes('/image/upload/');
+    const isPdf = /\.pdf(\?.*)?$/i.test(url);
     console.log('renderFileLink:', { label, filePath, url, isImage, isPdf });
     return (
         <motion.button
