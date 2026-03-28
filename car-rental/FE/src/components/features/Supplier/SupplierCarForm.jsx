@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { addSupplierCar } from "@/services/api";
+import api, { addSupplierCar } from "@/services/api";
 import { toast } from "react-toastify";
 import { FaCar, FaUpload, FaTimes, FaSave, FaShieldAlt, FaTools } from "react-icons/fa";
 import LoadingSpinner from "@/components/ui/Loading/LoadingSpinner";
@@ -28,6 +28,21 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
   const [errors, setErrors] = useState({});
   const [showInsurancePopup, setShowInsurancePopup] = useState(false);
   const [submittedCarData, setSubmittedCarData] = useState(null);
+  const [brands, setBrands] = useState([]);
+  const [fuelTypes, setFuelTypes] = useState([]);
+  const [regions, setRegions] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/api/cars/brands').catch(() => ({ data: { data: [] } })),
+      api.get('/api/cars/fuel-types').catch(() => ({ data: { data: [] } })),
+      api.get('/api/cars/regions').catch(() => ({ data: { data: [] } })),
+    ]).then(([b, f, r]) => {
+      setBrands(Array.isArray(b.data) ? b.data : (b.data?.data || []));
+      setFuelTypes(Array.isArray(f.data) ? f.data : (f.data?.data || []));
+      setRegions(Array.isArray(r.data) ? r.data : (r.data?.data || []));
+    });
+  }, []);
 
   // ... existing code ...
 
@@ -273,15 +288,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Hãng xe <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="brand"
                     value={form.brand}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.brand ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Ví dụ: Toyota, Honda, Kia..."
                     required
-                  />
+                  >
+                    <option value="">-- Chọn hãng xe --</option>
+                    {brands.map(b => (
+                      <option key={b.carBrandId} value={b.brandName}>{b.brandName}</option>
+                    ))}
+                  </select>
                   {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand}</p>}
                 </div>
 
@@ -372,15 +390,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Loại nhiên liệu <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="fuelType"
                     value={form.fuelType}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.fuelType ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Ví dụ: Xăng, Dầu, Điện..."
                     required
-                  />
+                  >
+                    <option value="">-- Chọn nhiên liệu --</option>
+                    {fuelTypes.map(f => (
+                      <option key={f.fuelTypeId} value={f.fuelTypeName}>{f.fuelTypeName}</option>
+                    ))}
+                  </select>
                   {errors.fuelType && <p className="text-red-500 text-sm mt-1">{errors.fuelType}</p>}
                 </div>
 
@@ -433,15 +454,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Khu vực <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="region"
                     value={form.region}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all ${errors.region ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Ví dụ: Hà Nội, TP.HCM..."
                     required
-                  />
+                  >
+                    <option value="">-- Chọn khu vực --</option>
+                    {regions.map(r => (
+                      <option key={r.regionId} value={r.regionName}>{r.regionName}</option>
+                    ))}
+                  </select>
                   {errors.region && <p className="text-red-500 text-sm mt-1">{errors.region}</p>}
                 </div>
 

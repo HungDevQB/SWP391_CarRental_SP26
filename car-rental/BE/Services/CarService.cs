@@ -40,6 +40,15 @@ public class CarService : ICarService
 
     public async Task<CarDto> CreateAsync(int supplierId, CreateCarRequest request)
     {
+        // Check duplicate license plate
+        if (!string.IsNullOrEmpty(request.LicensePlate))
+        {
+            var exists = await _context.Cars.AnyAsync(c => c.LicensePlate == request.LicensePlate);
+            if (exists)
+                throw new InvalidOperationException($"Biển số xe '{request.LicensePlate}' đã được đăng ký trong hệ thống.");
+        }
+
+        var pendingStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == "pending");
         var car = new Car
         {
             SupplierId = supplierId,
@@ -53,7 +62,7 @@ public class CarService : ICarService
             RentalPricePerDay = request.RentalPricePerDay,
             Description = request.Description,
             RegionId = request.RegionId,
-            StatusId = 1 // pending — chờ admin duyệt
+            StatusId = pendingStatus?.StatusId ?? 1
         };
 
         await _carRepo.AddAsync(car);

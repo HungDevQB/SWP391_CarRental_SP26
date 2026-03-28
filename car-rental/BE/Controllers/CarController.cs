@@ -158,9 +158,14 @@ public class CarController : ControllerBase
     [HttpGet("{id:int}/booked-dates")]
     public async Task<IActionResult> GetBookedDates(int id)
     {
-        var terminalStatuses = new[] { 4, 5, 22 };
+        var terminalStatusNames = new[] { "cancelled", "completed", "rejected", "expired" };
+        var terminalStatusIds = await _context.Statuses
+            .Where(s => terminalStatusNames.Contains(s.StatusName))
+            .Select(s => s.StatusId)
+            .ToListAsync();
+
         var bookings = await _context.Bookings
-            .Where(b => b.CarId == id && !b.IsDeleted && !terminalStatuses.Contains(b.StatusId))
+            .Where(b => b.CarId == id && !b.IsDeleted && !terminalStatusIds.Contains(b.StatusId))
             .Select(b => new { b.StartDate, b.EndDate })
             .ToListAsync();
 

@@ -1158,8 +1158,15 @@ export const addSupplierCar = async (carData, images = []) => {
         regionId: regionObj?.regionId,
         imageUrls,
     };
-    const res = await api.post('/api/cars', body);
-    return res.data;
+    console.log('[addSupplierCar] body:', JSON.stringify(body));
+    try {
+        const res = await api.post('/api/cars', body);
+        return res.data;
+    } catch (err) {
+        const msg = err?.response?.data?.message || err?.response?.data?.error || err?.response?.data || err.message;
+        console.error('[addSupplierCar] error:', msg, err?.response?.data);
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
 };
 
 // Xóa xe của supplier
@@ -1262,7 +1269,7 @@ export const createOwnerRegistrationRequest = async (data) => {
     formData.append('address', data.address);
     formData.append('phoneNumber', data.phoneNumber);
     formData.append('email', data.email);
-    formData.append('password', data.password);
+    formData.append('password', data.password || '');
     formData.append('carDocuments', data.carDocuments);
     formData.append('businessLicense', data.businessLicense);
     formData.append('driverLicense', data.driverLicense);
@@ -2227,6 +2234,15 @@ export const getContractByBookingId = async (bookingId) => {
 export const generateContract = async (bookingId) => {
     const token = getToken?.() || getItem('token');
     const res = await api.post(`/api/contracts/generate/${bookingId}`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    return res.data;
+};
+
+// Đảm bảo hợp đồng tồn tại cho booking (accessible to customer)
+export const ensureContract = async (bookingId) => {
+    const token = getToken?.() || getItem('token');
+    const res = await api.post(`/api/contracts/booking/${bookingId}/ensure`, {}, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
     return res.data;

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '@/store/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-    getProfile, 
-    getUserBookingHistory, 
-    updateProfile, 
-    changePassword, 
-    getFavoriteCars, 
+import api, {
+    getProfile,
+    getUserBookingHistory,
+    updateProfile,
+    changePassword,
+    getFavoriteCars,
     removeFavorite,
     sendEmailVerification,
     cancelBooking,
@@ -133,7 +133,10 @@ const ProfilePage = () => {
         userDetail: {
             fullName: '',
             address: '',
-            taxcode: ''
+            taxcode: '',
+            nationalId: '',
+            nationalIdFrontImage: '',
+            nationalIdBackImage: ''
         }
     });
     // OTP modal state
@@ -333,6 +336,10 @@ const waitingForPickup = (booking) => {
                         fullName: userData.fullName || userData.userDetail?.fullName || '',
                         address: userData.address || userData.userDetail?.address || '',
                         taxcode: userData.taxcode || userData.userDetail?.taxcode || '',
+                        nationalId: userData.userDetail?.nationalId || '',
+                        nationalIdFrontImage: userData.userDetail?.nationalIdFrontImage || '',
+                        nationalIdBackImage: userData.userDetail?.nationalIdBackImage || '',
+                        avatar: userData.userDetail?.avatar || '',
                     },
                     role: userData.role || userData.roleName || '',
                 };
@@ -348,7 +355,10 @@ const waitingForPickup = (booking) => {
                     userDetail: {
                         fullName: normalizedUser.fullName || '',
                         address: normalizedUser.address || normalizedUser.userDetail?.address || '',
-                        taxcode: normalizedUser.taxcode || normalizedUser.userDetail?.taxcode || ''
+                        taxcode: normalizedUser.taxcode || normalizedUser.userDetail?.taxcode || '',
+                        nationalId: normalizedUser.userDetail?.nationalId || '',
+                        nationalIdFrontImage: normalizedUser.userDetail?.nationalIdFrontImage || '',
+                        nationalIdBackImage: normalizedUser.userDetail?.nationalIdBackImage || ''
                     }
                 });
                 
@@ -421,24 +431,26 @@ const waitingForPickup = (booking) => {
     };
 
     // Handle profile update
-
-    // Khi nhấn cập nhật, nếu số điện thoại thay đổi thì show OTP modal, xác thực xong mới update
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        if (pendingPhone !== undefined && pendingPhone !== null && pendingPhone !== formData.phone) {
-            setShowOtpModal(true);
-            return;
-        }
         try {
             setUpdating(true);
             console.log('🔄 Updating profile with data:', formData);
             // Flatten form data to match UpdateProfileRequest shape
             await updateProfile({
                 fullName: formData.userDetail?.fullName || formData.fullName,
-                phone: formData.phone,
+                phone: pendingPhone ?? formData.phone,
                 countryCode: formData.countryCode,
                 address: formData.userDetail?.address || formData.address,
             });
+            // Update national ID info if changed
+            if (formData.userDetail?.nationalId !== undefined) {
+                await api.put('/api/users/me/detail', {
+                    nationalId: formData.userDetail.nationalId || null,
+                    nationalIdFrontImage: formData.userDetail.nationalIdFrontImage || null,
+                    nationalIdBackImage: formData.userDetail.nationalIdBackImage || null,
+                });
+            }
             toast.success('Cập nhật thông tin thành công!');
             setEditMode(false);
             await fetchProfile(); // Refresh data
@@ -2301,6 +2313,110 @@ const handleCancelBooking = async (bookingId) => {
                                                         placeholder="Nhập mã số thuế"
                                                     />
                                                 </div>
+
+                                                <div className="form-group">
+                                                    <label>Số CCCD/CMND</label>
+                                                    <input
+                                                        type="text"
+                                                        name="userDetail.nationalId"
+                                                        value={formData.userDetail.nationalId}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Nhập số căn cước công dân"
+                                                        maxLength={12}
+                                                    />
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label>Ảnh CCCD mặt trước</label>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {formData.userDetail.nationalIdFrontImage && (
+                                                            <img
+                                                                src={formData.userDetail.nationalIdFrontImage}
+                                                                alt="CCCD mặt trước"
+                                                                style={{ maxWidth: 220, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                                                            />
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/jpeg,image/png,image/webp"
+                                                            style={{ display: 'none' }}
+                                                            id="cccd-front-input"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+                                                                const fd = new FormData();
+                                                                fd.append('file', file);
+                                                                try {
+                                                                    const res = await api.post('/api/users/me/national-id-image?side=front', fd, {
+                                                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                                                    });
+                                                                    const url = res.data?.data?.imageUrl;
+                                                                    if (url) setFormData(prev => ({
+                                                                        ...prev,
+                                                                        userDetail: { ...prev.userDetail, nationalIdFrontImage: url }
+                                                                    }));
+                                                                } catch (err) {
+                                                                    toast.error('Lỗi upload ảnh: ' + (err.response?.data?.message || err.message));
+                                                                }
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="btn secondary"
+                                                            style={{ width: 'fit-content' }}
+                                                            onClick={() => document.getElementById('cccd-front-input').click()}
+                                                        >
+                                                            <i className="fas fa-upload"></i> {formData.userDetail.nationalIdFrontImage ? 'Đổi ảnh' : 'Tải lên'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label>Ảnh CCCD mặt sau</label>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {formData.userDetail.nationalIdBackImage && (
+                                                            <img
+                                                                src={formData.userDetail.nationalIdBackImage}
+                                                                alt="CCCD mặt sau"
+                                                                style={{ maxWidth: 220, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                                                            />
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/jpeg,image/png,image/webp"
+                                                            style={{ display: 'none' }}
+                                                            id="cccd-back-input"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+                                                                const fd = new FormData();
+                                                                fd.append('file', file);
+                                                                try {
+                                                                    const res = await api.post('/api/users/me/national-id-image?side=back', fd, {
+                                                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                                                    });
+                                                                    const url = res.data?.data?.imageUrl;
+                                                                    if (url) setFormData(prev => ({
+                                                                        ...prev,
+                                                                        userDetail: { ...prev.userDetail, nationalIdBackImage: url }
+                                                                    }));
+                                                                } catch (err) {
+                                                                    toast.error('Lỗi upload ảnh: ' + (err.response?.data?.message || err.message));
+                                                                }
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="btn secondary"
+                                                            style={{ width: 'fit-content' }}
+                                                            onClick={() => document.getElementById('cccd-back-input').click()}
+                                                        >
+                                                            <i className="fas fa-upload"></i> {formData.userDetail.nationalIdBackImage ? 'Đổi ảnh' : 'Tải lên'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         
@@ -2354,6 +2470,29 @@ const handleCancelBooking = async (bookingId) => {
                                                     <label>Mã số thuế:</label>
                                                     <span>{user.userDetail?.taxcode || 'Chưa có'}</span>
                                                 </div>
+                                                <div className="info-row">
+                                                    <label>Số CCCD/CMND:</label>
+                                                    <span>{user.userDetail?.nationalId || 'Chưa cập nhật'}</span>
+                                                </div>
+                                                {(user.userDetail?.nationalIdFrontImage || user.userDetail?.nationalIdBackImage) && (
+                                                    <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                                                        <label>Ảnh CCCD:</label>
+                                                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                                            {user.userDetail.nationalIdFrontImage && (
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mặt trước</div>
+                                                                    <img src={user.userDetail.nationalIdFrontImage} alt="CCCD mặt trước" style={{ maxWidth: 160, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                                </div>
+                                                            )}
+                                                            {user.userDetail.nationalIdBackImage && (
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mặt sau</div>
+                                                                    <img src={user.userDetail.nationalIdBackImage} alt="CCCD mặt sau" style={{ maxWidth: 160, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div className="info-row">
                                                     <label>Ngày tạo tài khoản:</label>
                                                     <span>
