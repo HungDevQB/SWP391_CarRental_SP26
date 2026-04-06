@@ -707,7 +707,7 @@ const BookingModal = ({ isOpen, onClose, car, onSubmitBooking }) => {
                               ? "bg-blue-100 text-blue-600 font-semibold border-2 border-blue-300"
                               : day.isCurrentMonth
                                 ? "text-gray-900 hover:bg-blue-50"
-                                : "text-gray-400 hover:bg-gray-50"
+                                : "text-gray-600 hover:bg-blue-50"
                         } ${
                           (showDatePicker === "pickup" ? form.pickupDate : form.dropoffDate) === day.dateString
                             ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold"

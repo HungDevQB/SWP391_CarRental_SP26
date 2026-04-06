@@ -180,7 +180,8 @@ public class CarService : ICarService
     {
         CarId = c.CarId,
         SupplierId = c.SupplierId,
-        SupplierName = c.Supplier?.FullName,
+        SupplierName = c.Supplier?.FullName ?? c.Supplier?.Username,
+        SupplierPhone = c.Supplier?.Phone,
         CarBrandId = c.CarBrandId,
         BrandName = c.CarBrand?.BrandName,
         FuelTypeId = c.FuelTypeId,

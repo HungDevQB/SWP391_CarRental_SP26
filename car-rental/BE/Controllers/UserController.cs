@@ -119,6 +119,39 @@ public class UserController : ControllerBase
         return Ok(ApiResponse.OkNoData("Cập nhật thành công"));
     }
 
+    [HttpPost("me/driving-license-image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadDrivingLicenseImage(IFormFile file, [FromQuery] string side)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(ApiResponse<object>.Fail("Vui lòng chọn file ảnh"));
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest(ApiResponse<object>.Fail("File quá lớn, tối đa 5MB"));
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            return BadRequest(ApiResponse<object>.Fail("Chỉ chấp nhận file ảnh JPG, PNG, WEBP"));
+
+        var url = await _cloudinary.UploadDocumentAsync(file, "driving_licenses");
+
+        var detail = await _context.UserDetails.FirstOrDefaultAsync(d => d.UserId == CurrentUserId);
+        if (detail == null)
+        {
+            detail = new CarRental.API.Models.UserDetail { UserId = CurrentUserId };
+            _context.UserDetails.Add(detail);
+        }
+
+        if (side == "back")
+            detail.DrivingLicenseBackImage = url;
+        else
+            detail.DrivingLicenseFrontImage = url;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(ApiResponse<object>.Ok(new { imageUrl = url }, "Upload ảnh bằng lái thành công"));
+    }
+
     [HttpPost("me/national-id-image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadNationalIdImage(IFormFile file, [FromQuery] string side)

@@ -70,6 +70,14 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
         transmission: form.transmission,
         numOfSeats: parseInt(form.numOfSeats)
       };
+
+      // Nếu đang edit, gọi onSubmit prop thay vì addSupplierCar
+      if (isEdit && onSubmit) {
+        await onSubmit(carData, form.images);
+        setLoading(false);
+        return;
+      }
+
       const response = await addSupplierCar(carData, form.images);
       toast.success('Xe đã được gửi lên hệ thống thành công. Vui lòng chờ admin duyệt.');
       

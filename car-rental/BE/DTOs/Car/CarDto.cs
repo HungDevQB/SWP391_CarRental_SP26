@@ -5,6 +5,7 @@ public class CarDto
     public int CarId { get; set; }
     public int SupplierId { get; set; }
     public string? SupplierName { get; set; }
+    public string? SupplierPhone { get; set; }
     public int CarBrandId { get; set; }
     public string? BrandName { get; set; }
     public int FuelTypeId { get; set; }

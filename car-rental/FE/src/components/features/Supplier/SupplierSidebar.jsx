@@ -14,7 +14,6 @@ const menuItems = [
   { key: "report", label: "Báo cáo & thống kê", icon: <FaChartBar /> },
   { key: "profile", label: "Hồ sơ cá nhân", icon: <FaUser /> },
   { key: "chat", label: "Chat/hỗ trợ khách hàng", icon: <FaComments /> },
-  { key: "insurance", label: "Bảo hiểm", icon: <FaClipboardList /> },
   { key: "driver", label: "Quản lý tài xế", icon: <FaCar /> },
 ];
 
@@ -32,7 +31,7 @@ const SupplierSidebar = ({ user, selected, setSelected, onLogout }) => {
         </div>
       </div>
       {/* Menu */}
-      <nav className="flex-1 py-6 px-3">
+      <nav className="flex-1 py-6 px-3 overflow-y-auto">
         <ul className="flex flex-col gap-2">
           {menuItems.map((item) => (
             <li key={item.key}>

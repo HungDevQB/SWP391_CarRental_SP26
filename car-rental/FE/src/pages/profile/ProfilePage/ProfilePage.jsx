@@ -320,11 +320,15 @@ const waitingForPickup = (booking) => {
     const fetchProfile = async () => {
         try {
             console.log('🔄 Fetching profile...');
-            const response = await getProfile();
+            const [response, detailRes] = await Promise.all([
+                getProfile(),
+                api.get('/api/users/me/detail').then(r => r.data?.data ?? r.data).catch(() => null)
+            ]);
             console.log('✅ Profile response:', response);
-            
+
             // After interceptor, response is already the UserDto
             const userData = response;
+            const detail = detailRes;
 
             if (userData && userData.userId) {
                 console.log('✅ Setting user state:', userData);
@@ -333,13 +337,17 @@ const waitingForPickup = (booking) => {
                     ...userData,
                     username: userData.username || userData.email || '',
                     userDetail: {
-                        fullName: userData.fullName || userData.userDetail?.fullName || '',
-                        address: userData.address || userData.userDetail?.address || '',
-                        taxcode: userData.taxcode || userData.userDetail?.taxcode || '',
-                        nationalId: userData.userDetail?.nationalId || '',
-                        nationalIdFrontImage: userData.userDetail?.nationalIdFrontImage || '',
-                        nationalIdBackImage: userData.userDetail?.nationalIdBackImage || '',
-                        avatar: userData.userDetail?.avatar || '',
+                        fullName: userData.fullName || '',
+                        address: detail?.address || userData.address || '',
+                        taxcode: userData.taxcode || '',
+                        nationalId: detail?.nationalId || '',
+                        nationalIdFrontImage: detail?.nationalIdFrontImage || '',
+                        nationalIdBackImage: detail?.nationalIdBackImage || '',
+                        drivingLicense: detail?.drivingLicense || '',
+                        drivingLicenseFrontImage: detail?.drivingLicenseFrontImage || '',
+                        drivingLicenseBackImage: detail?.drivingLicenseBackImage || '',
+                        avatar: userData.avatarUrl || '',
+                        isVerified: detail?.isVerified || false,
                     },
                     role: userData.role || userData.roleName || '',
                 };
@@ -354,11 +362,14 @@ const waitingForPickup = (booking) => {
                     preferredLanguage: normalizedUser.preferredLanguage || 'vi',
                     userDetail: {
                         fullName: normalizedUser.fullName || '',
-                        address: normalizedUser.address || normalizedUser.userDetail?.address || '',
-                        taxcode: normalizedUser.taxcode || normalizedUser.userDetail?.taxcode || '',
+                        address: normalizedUser.userDetail?.address || '',
+                        taxcode: normalizedUser.userDetail?.taxcode || '',
                         nationalId: normalizedUser.userDetail?.nationalId || '',
                         nationalIdFrontImage: normalizedUser.userDetail?.nationalIdFrontImage || '',
-                        nationalIdBackImage: normalizedUser.userDetail?.nationalIdBackImage || ''
+                        nationalIdBackImage: normalizedUser.userDetail?.nationalIdBackImage || '',
+                        drivingLicense: normalizedUser.userDetail?.drivingLicense || '',
+                        drivingLicenseFrontImage: normalizedUser.userDetail?.drivingLicenseFrontImage || '',
+                        drivingLicenseBackImage: normalizedUser.userDetail?.drivingLicenseBackImage || ''
                     }
                 });
                 
@@ -449,6 +460,9 @@ const waitingForPickup = (booking) => {
                     nationalId: formData.userDetail.nationalId || null,
                     nationalIdFrontImage: formData.userDetail.nationalIdFrontImage || null,
                     nationalIdBackImage: formData.userDetail.nationalIdBackImage || null,
+                    drivingLicense: formData.userDetail.drivingLicense || null,
+                    drivingLicenseFrontImage: formData.userDetail.drivingLicenseFrontImage || null,
+                    drivingLicenseBackImage: formData.userDetail.drivingLicenseBackImage || null,
                 });
             }
             toast.success('Cập nhật thông tin thành công!');
@@ -2417,9 +2431,73 @@ const handleCancelBooking = async (bookingId) => {
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                <div className="form-group">
+                                                    <label>Số bằng lái xe</label>
+                                                    <input
+                                                        type="text"
+                                                        name="userDetail.drivingLicense"
+                                                        value={formData.userDetail.drivingLicense}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Nhập số bằng lái xe"
+                                                        maxLength={12}
+                                                    />
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label>Ảnh bằng lái mặt trước</label>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {formData.userDetail.drivingLicenseFrontImage && (
+                                                            <img src={formData.userDetail.drivingLicenseFrontImage} alt="Bằng lái mặt trước" style={{ maxWidth: 220, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                        )}
+                                                        <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} id="dl-front-input"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+                                                                const fd = new FormData();
+                                                                fd.append('file', file);
+                                                                try {
+                                                                    const res = await api.post('/api/users/me/driving-license-image?side=front', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                                                                    const url = res.data?.data?.imageUrl;
+                                                                    if (url) setFormData(prev => ({ ...prev, userDetail: { ...prev.userDetail, drivingLicenseFrontImage: url } }));
+                                                                } catch (err) { toast.error('Lỗi upload: ' + (err.response?.data?.message || err.message)); }
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                        <button type="button" className="btn secondary" style={{ width: 'fit-content' }} onClick={() => document.getElementById('dl-front-input').click()}>
+                                                            <i className="fas fa-upload"></i> {formData.userDetail.drivingLicenseFrontImage ? 'Đổi ảnh' : 'Tải lên'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label>Ảnh bằng lái mặt sau</label>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {formData.userDetail.drivingLicenseBackImage && (
+                                                            <img src={formData.userDetail.drivingLicenseBackImage} alt="Bằng lái mặt sau" style={{ maxWidth: 220, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                        )}
+                                                        <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} id="dl-back-input"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+                                                                const fd = new FormData();
+                                                                fd.append('file', file);
+                                                                try {
+                                                                    const res = await api.post('/api/users/me/driving-license-image?side=back', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                                                                    const url = res.data?.data?.imageUrl;
+                                                                    if (url) setFormData(prev => ({ ...prev, userDetail: { ...prev.userDetail, drivingLicenseBackImage: url } }));
+                                                                } catch (err) { toast.error('Lỗi upload: ' + (err.response?.data?.message || err.message)); }
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                        <button type="button" className="btn secondary" style={{ width: 'fit-content' }} onClick={() => document.getElementById('dl-back-input').click()}>
+                                                            <i className="fas fa-upload"></i> {formData.userDetail.drivingLicenseBackImage ? 'Đổi ảnh' : 'Tải lên'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="form-actions">
                                             <button type="button" className="btn secondary" onClick={() => setEditMode(false)}>
                                                 <i className="fas fa-times"></i>
@@ -2488,6 +2566,29 @@ const handleCancelBooking = async (bookingId) => {
                                                                 <div style={{ textAlign: 'center' }}>
                                                                     <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mặt sau</div>
                                                                     <img src={user.userDetail.nationalIdBackImage} alt="CCCD mặt sau" style={{ maxWidth: 160, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="info-row">
+                                                    <label>Số bằng lái xe:</label>
+                                                    <span>{user.userDetail?.drivingLicense || 'Chưa cập nhật'}</span>
+                                                </div>
+                                                {(user.userDetail?.drivingLicenseFrontImage || user.userDetail?.drivingLicenseBackImage) && (
+                                                    <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+                                                        <label>Ảnh bằng lái:</label>
+                                                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                                            {user.userDetail.drivingLicenseFrontImage && (
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mặt trước</div>
+                                                                    <img src={user.userDetail.drivingLicenseFrontImage} alt="Bằng lái mặt trước" style={{ maxWidth: 160, borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                                                                </div>
+                                                            )}
+                                                            {user.userDetail.drivingLicenseBackImage && (
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mặt sau</div>
+                                                                    <img src={user.userDetail.drivingLicenseBackImage} alt="Bằng lái mặt sau" style={{ maxWidth: 160, borderRadius: 8, border: '1px solid #e5e7eb' }} />
                                                                 </div>
                                                             )}
                                                         </div>

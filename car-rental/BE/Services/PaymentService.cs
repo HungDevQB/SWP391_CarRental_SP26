@@ -14,14 +14,16 @@ public class PaymentService : IPaymentService
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _config;
     private readonly INotificationService _notification;
+    private readonly IEmailService _email;
 
     public PaymentService(IPaymentRepository paymentRepo, ApplicationDbContext context,
-        IConfiguration config, INotificationService notification)
+        IConfiguration config, INotificationService notification, IEmailService email)
     {
         _paymentRepo = paymentRepo;
         _context = context;
         _config = config;
         _notification = notification;
+        _email = email;
         StripeConfiguration.ApiKey = config["Stripe:SecretKey"];
     }
 
@@ -116,6 +118,32 @@ public class PaymentService : IPaymentService
         await _paymentRepo.SaveChangesAsync();
         try { await _notification.SendAsync(booking.CustomerId, $"Thanh toán đơn #{bookingId} thành công!", "in_app"); }
         catch { /* ignore */ }
+
+        // Gửi email xác nhận sau khi thanh toán thành công
+        try
+        {
+            var customer = await _context.Users
+                .Include(u => u.UserDetail)
+                .FirstOrDefaultAsync(u => u.UserId == booking.CustomerId);
+            if (customer?.Email != null)
+            {
+                var car = await _context.Cars
+                    .Include(c => c.CarBrand)
+                    .FirstOrDefaultAsync(c => c.CarId == booking.CarId);
+                var carInfo = car != null ? $"{car.CarBrand?.BrandName} {car.CarModel}" : $"Xe #{booking.CarId}";
+                var financial = await _context.BookingFinancials.FirstOrDefaultAsync(f => f.BookingId == bookingId);
+                await _email.SendBookingConfirmationAsync(
+                    customer.Email,
+                    customer.FullName ?? customer.Username ?? customer.Email,
+                    bookingId,
+                    booking.StartDate,
+                    booking.EndDate,
+                    carInfo,
+                    financial?.TotalFare ?? amountVnd);
+            }
+        }
+        catch { /* ignore email errors */ }
+
         return true;
     }
 
@@ -181,6 +209,27 @@ public class PaymentService : IPaymentService
     public async Task<IEnumerable<SupplierRevenueDto>> GetRevenueBySupplierAsync(int supplierId) =>
         (await _context.SupplierRevenues.Where(r => r.SupplierId == supplierId).ToListAsync())
         .Select(MapRevenueToDto);
+
+    public async Task<IEnumerable<AdminPaymentDto>> GetAllAsync() =>
+        await _context.Payments
+            .Include(p => p.Booking).ThenInclude(b => b!.Customer)
+            .Include(p => p.Booking).ThenInclude(b => b!.Car).ThenInclude(c => c!.Supplier)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new AdminPaymentDto
+            {
+                PaymentId = p.PaymentId,
+                BookingId = p.BookingId,
+                CustomerName = p.Booking!.Customer!.FullName ?? p.Booking.Customer.Email,
+                SupplierName = p.Booking.Car!.Supplier!.FullName ?? p.Booking.Car.Supplier.Email,
+                Amount = p.Amount,
+                PaymentMethod = p.PaymentMethod,
+                PaymentType = p.PaymentType,
+                PaymentStatus = p.PaymentStatus,
+                TransactionId = p.TransactionId,
+                PaymentDate = p.PaymentDate,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
 
     private static PaymentDto MapToDto(Payment p) => new()
     {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatBox from '../Common/ChatBox';
 import * as signalR from '@microsoft/signalr';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5277';
 
 const SupplierChatManager = ({ supplierId, supplierName, customers: initialCustomers }) => {
   console.log('[SupplierChatManager] supplierId:', supplierId);

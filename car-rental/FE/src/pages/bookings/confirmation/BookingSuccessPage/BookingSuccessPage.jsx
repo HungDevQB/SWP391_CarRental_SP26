@@ -342,6 +342,11 @@ const BookingSuccessPage = () => {
             car: data.car || data.vehicle || {},
             customerInfo: stateCustomerInfo || data.customer || data.user || data.customerInfo || {},
             priceBreakdown: statePriceBreakdown || data.priceBreakdown || {},
+            // Map startDate/endDate (từ API) → pickupDateTime/dropoffDateTime
+            pickupDateTime: data.pickupDateTime || data.startDate || null,
+            dropoffDateTime: data.dropoffDateTime || data.endDate || null,
+            pickupLocation: data.pickupLocation || null,
+            dropoffLocation: data.dropoffLocation || null,
             withDriver: stateWithDriver !== undefined ? stateWithDriver : data.withDriver,
             deliveryRequested: stateDeliveryRequested !== undefined ? stateDeliveryRequested : data.deliveryRequested,
             
@@ -515,7 +520,7 @@ const BookingSuccessPage = () => {
         }
       }
 
-      if (carId && !bookingData.car?.model) {
+      if (carId) {
         try {
           const carResponse = await getCarById(carId);
           setCarDetails(carResponse);
@@ -743,8 +748,16 @@ const BookingSuccessPage = () => {
 
   return (
     <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #invoice-content, #invoice-content * { visibility: visible; }
+          #invoice-content { position: absolute; top: 0; left: 0; width: 100%; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-        <PageHeader />
+        <div className="no-print"><PageHeader /></div>
         
         {/* Confetti Effect */}
         {showConfetti && (
@@ -768,7 +781,7 @@ const BookingSuccessPage = () => {
           </div>
         )}
 
-        <main className="container mx-auto px-4 py-12">
+        <main id="invoice-content" className="container mx-auto px-4 py-12">
           {/* Success Header */}
           <div className="text-center mb-16">
             <div className="relative">
@@ -1232,7 +1245,7 @@ const BookingSuccessPage = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="space-y-4">
+              <div className="space-y-4 no-print">
                 <button
                   onClick={() => window.print()}
                   className="w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-2xl hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl"

@@ -80,6 +80,25 @@ public class ContractController : ControllerBase
         }
     }
 
+    /// <summary>Ensure contract exists for a booking (accessible to all authenticated users)</summary>
+    [HttpPost("booking/{bookingId:int}/ensure")]
+    public async Task<IActionResult> EnsureContract(int bookingId)
+    {
+        try
+        {
+            var contract = await _contractService.EnsureContractAsync(bookingId, CurrentUserId);
+            return Ok(ApiResponse<ContractDto>.Ok(contract, "Hợp đồng đã sẵn sàng"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.Fail(ex.Message, 404));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, ApiResponse<object>.Fail(ex.Message, 403));
+        }
+    }
+
     /// <summary>Sign a contract (customer or supplier)</summary>
     [HttpPost("{id:int}/sign")]
     public async Task<IActionResult> Sign(int id, [FromBody] SignContractRequest request)

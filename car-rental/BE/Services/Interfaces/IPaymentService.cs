@@ -12,4 +12,5 @@ public interface IPaymentService
     Task<IEnumerable<CashPaymentConfirmationDto>> GetPendingCashConfirmationsAsync(int supplierId);
     Task<SupplierRevenueDto?> GetRevenueByBookingAsync(int bookingId);
     Task<IEnumerable<SupplierRevenueDto>> GetRevenueBySupplierAsync(int supplierId);
+    Task<IEnumerable<AdminPaymentDto>> GetAllAsync();
 }

@@ -20,6 +20,8 @@ const SupplierCarList = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editCarData, setEditCarData] = useState(null);
   const [rentedCarCount, setRentedCarCount] = useState(0);
+  const [bookedCarIds, setBookedCarIds] = useState(new Set());   // confirmed
+  const [rentedCarIds, setRentedCarIds] = useState(new Set());   // in_progress
 
   useEffect(() => {
     fetchCars();
@@ -45,12 +47,18 @@ const SupplierCarList = () => {
   const fetchRentedCars = async () => {
     try {
       const orders = await getSupplierOrders();
-      const inProgressBookings = orders?.filter(order => {
-        const st = (order.status?.statusName || order.statusName || '').toLowerCase();
-        return st === 'in_progress' || st === 'in progress' || st === 'đang thuê';
-      }) || [];
-      const uniqueRentedCarIds = new Set(inProgressBookings.map(order => order.car?.carId || order.carId).filter(Boolean));
-      setRentedCarCount(uniqueRentedCarIds.size);
+      const inProgressIds = new Set();
+      const confirmedIds = new Set();
+      (orders || []).forEach(order => {
+        const st = (order.statusName || order.status?.statusName || '').toLowerCase();
+        const carId = order.carId || order.car?.carId;
+        if (!carId) return;
+        if (st === 'in_progress' || st === 'in progress') inProgressIds.add(carId);
+        else if (st === 'confirmed') confirmedIds.add(carId);
+      });
+      setRentedCarIds(inProgressIds);
+      setBookedCarIds(confirmedIds);
+      setRentedCarCount(inProgressIds.size);
     } catch (err) {
       setRentedCarCount(0);
     }
@@ -98,6 +106,28 @@ const SupplierCarList = () => {
     }
   };
 
+  // Tính status hiển thị thực tế dựa trên booking đang hoạt động
+  const getEffectiveStatus = (car) => {
+    const carId = car.carId;
+    if (rentedCarIds.has(carId)) return 'rented';
+    if (bookedCarIds.has(carId)) return 'confirmed';
+    return car.statusName || car.status?.statusName || 'available';
+  };
+
+  const getStatusLabelEffective = (car) => {
+    const eff = getEffectiveStatus(car);
+    if (eff === 'rented') return 'Đang thuê';
+    if (eff === 'confirmed') return 'Đã đặt';
+    return getStatusLabel(eff);
+  };
+
+  const getStatusColorEffective = (car) => {
+    const eff = getEffectiveStatus(car);
+    if (eff === 'rented') return 'bg-blue-100 text-blue-800';
+    if (eff === 'confirmed') return 'bg-orange-100 text-orange-800';
+    return getStatusColor(eff);
+  };
+
   const handleViewDetail = (car) => {
     setSelectedCar(car);
     setShowDetailModal(true);
@@ -111,22 +141,40 @@ const SupplierCarList = () => {
   const handleEditCar = (car) => {
     setEditCarData({
       carId: car.carId,
-      name: car.model || '',
+      name: car.model || car.carModel || '',
+      model: car.model || car.carModel || '',
       licensePlate: car.licensePlate || '',
       description: car.description || car.describe || car.features || '',
-      rentalPrice: car.dailyRate || 0,
+      rentalPrice: car.rentalPricePerDay || car.dailyRate || 0,
+      dailyRate: car.rentalPricePerDay || car.dailyRate || 0,
+      year: car.year || '',
+      color: car.color || '',
+      brandName: car.brandName || car.brand?.brandName || '',
+      regionName: car.regionName || car.region?.regionName || '',
+      fuelTypeName: car.fuelTypeName || car.fuelType?.fuelTypeName || '',
+      transmission: car.transmission || '',
+      numOfSeats: car.seats || car.numOfSeats || '',
+      statusName: car.statusName || car.status?.statusName || '',
+      images: car.images || (car.imageUrls || []).map(url => ({ imageUrl: url })),
     });
     setShowEditModal(true);
   };
 
   const handleEditCarSubmit = async (formData, images) => {
     try {
-      // Chuẩn bị dữ liệu gửi đi, khớp với VehicleDTO
+      // Chuẩn bị dữ liệu gửi đi đầy đủ
       const dataToSend = {
         name: formData.name?.trim() || editCarData.name,
         licensePlate: formData.licensePlate?.trim() || editCarData.licensePlate,
         description: formData.description?.trim() || editCarData.description,
         rentalPrice: parseFloat(formData.rentalPrice) || editCarData.rentalPrice,
+        year: formData.year ? parseInt(formData.year) : undefined,
+        color: formData.color?.trim() || undefined,
+        numOfSeats: formData.numOfSeats ? parseInt(formData.numOfSeats) : undefined,
+        transmission: formData.transmission?.trim() || undefined,
+        brand: formData.brand?.trim() || undefined,
+        region: formData.region?.trim() || undefined,
+        fuelType: formData.fuelType?.trim() || undefined,
       };
 
       // Validate cơ bản
@@ -336,8 +384,8 @@ const SupplierCarList = () => {
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(car.statusName)}`}>
-                              {getStatusLabel(car.statusName)}
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColorEffective(car)}`}>
+                              {getStatusLabelEffective(car)}
                             </span>
                           </td>
                           <td className="py-4 px-6">
@@ -463,7 +511,7 @@ const SupplierCarList = () => {
                 </span></div>
                 <div><span className="font-semibold text-gray-600">Giá/ngày:</span> <span className="font-bold text-green-600">{(selectedCar.dailyRate || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 })}</span></div>
                 <div><span className="font-semibold text-gray-600">Số chỗ:</span> <span className="font-medium text-gray-800">{selectedCar.numOfSeats}</span></div>
-                <div><span className="font-semibold text-gray-600">Trạng thái:</span> <span className="font-medium text-gray-800">{getStatusLabel(selectedCar.statusName)}</span></div>
+                <div><span className="font-semibold text-gray-600">Trạng thái:</span> <span className="font-medium text-gray-800">{getStatusLabelEffective(selectedCar)}</span></div>
               </div>
             </div>
             <div className="px-6 pb-6">

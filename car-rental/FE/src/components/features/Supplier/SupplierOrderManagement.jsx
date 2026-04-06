@@ -40,7 +40,7 @@ import CashPaymentManagementModal from "./CashPaymentManagementModal";
 import CarConditionReportView from '@/components/CarConditionReport/CarConditionReportView';
 import { AuthContext } from '@/store/AuthContext';
 
-const socketUrl = 'http://localhost:5173'; // Đổi thành URL backend Node.js của bạn nếu khác
+const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5277';
 
 const SupplierOrderManagement = () => {
   // States

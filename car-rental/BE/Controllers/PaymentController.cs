@@ -21,6 +21,14 @@ public class PaymentController : ControllerBase
         _config = config;
     }
 
+    [Authorize(Roles = "admin")]
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var payments = await _paymentService.GetAllAsync();
+        return Ok(ApiResponse<IEnumerable<AdminPaymentDto>>.Ok(payments));
+    }
+
     [Authorize]
     [HttpPost("stripe/create-intent")]
     public async Task<IActionResult> CreateStripeIntent([FromBody] CreateStripePaymentRequest request)

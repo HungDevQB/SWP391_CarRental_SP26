@@ -14,35 +14,6 @@ const DriverManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Mock data - thay thế bằng API call thực tế
-  const mockDrivers = [
-    {
-      id: 1,
-      name: "Nguyễn Văn A",
-      phone: "0123456789",
-      licenseNumber: "B2-123456",
-      experience: "5 năm",
-      status: "Hoạt động",
-      email: "driver1@example.com",
-      address: "Hà Nội",
-      idCard: "123456789",
-      licenseType: "B2",
-      licenseExpiry: "2025-12-31"
-    },
-    {
-      id: 2,
-      name: "Trần Thị B",
-      phone: "0987654321",
-      licenseNumber: "B2-654321",
-      experience: "3 năm",
-      status: "Hoạt động",
-      email: "driver2@example.com",
-      address: "TP.HCM",
-      idCard: "987654321",
-      licenseType: "B2",
-      licenseExpiry: "2026-06-30"
-    }
-  ];
 
   useEffect(() => {
     fetchDrivers();

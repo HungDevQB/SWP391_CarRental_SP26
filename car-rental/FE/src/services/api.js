@@ -4,7 +4,7 @@ import { getToken } from "@/utils/auth"
 import { getItem } from "@/utils/auth";
 
 // Cấu hình base URL
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5277';
 
 // Tạo instance Axios
 const api = axios.create({
@@ -1200,12 +1200,24 @@ export const updateSupplierCar = async (carId, carData) => {
 export const getSupplierOrders = async () => {
     const res = await api.get('/api/bookings/supplier/bookings');
     const raw = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-    return raw.map(b => ({
-        ...b,
-        statusName: b.statusName || b.status?.statusName || '',
-        carModel: b.carModel || b.car?.carModel || '',
-        totalPrice: b.totalPrice || b.bookingFinancial?.totalFare || 0,
-    }));
+    return raw.map(b => {
+        const carModel = b.carModel || b.car?.carModel || b.car?.model || '';
+        const customerName = b.customerName || b.customer?.userDetail?.fullName || b.customer?.fullName || b.customer?.name || '';
+        return {
+            ...b,
+            statusName: b.statusName || b.status?.statusName || '',
+            carModel,
+            customerName,
+            // nested car object for components that read order.car?.model
+            car: b.car ? { ...b.car, model: b.car.model || b.car.carModel || carModel } : { model: carModel, carModel },
+            // nested customer object for components that read order.customer?.name
+            customer: b.customer ? { ...b.customer, name: b.customer.name || customerName } : { name: customerName },
+            totalAmount: b.totalPrice || b.totalAmount || b.totalFare || b.bookingFinancial?.totalFare || 0,
+            totalPrice: b.totalPrice || b.totalAmount || b.bookingFinancial?.totalFare || 0,
+            pickupDateTime: b.pickupDateTime || b.startDate || null,
+            dropoffDateTime: b.dropoffDateTime || b.endDate || null,
+        };
+    });
 };
 
 // Dashboard APIs
@@ -1437,8 +1449,9 @@ export const refundDeposit = async (bookingId) => {
  */
 export const getAllPayments = async () => {
     try {
-        const response = await api.get('/api/payments');
-        return response.data;
+        const response = await api.get('/api/payment');
+        const raw = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return raw;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Lấy danh sách payment thất bại');
     }

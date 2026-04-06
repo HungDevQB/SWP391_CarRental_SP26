@@ -10,11 +10,15 @@ public class ContractService : IContractService
 {
     private readonly ApplicationDbContext _context;
     private readonly INotificationService _notification;
+    private readonly IEmailService _email;
+    private readonly ILogger<ContractService> _logger;
 
-    public ContractService(ApplicationDbContext context, INotificationService notification)
+    public ContractService(ApplicationDbContext context, INotificationService notification, IEmailService email, ILogger<ContractService> logger)
     {
         _context = context;
         _notification = notification;
+        _email = email;
+        _logger = logger;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -101,6 +105,32 @@ public class ContractService : IContractService
         });
     }
 
+    public async Task<ContractDto> EnsureContractAsync(int bookingId, int requestUserId)
+    {
+        // Return existing contract if found
+        var existing = await _context.Contracts
+            .FirstOrDefaultAsync(c => c.BookingId == bookingId && !c.IsDeleted);
+        if (existing != null)
+            return (await GetContractByIdAsync(existing.ContractId))!;
+
+        // Verify requester is part of this booking (customer or supplier)
+        var booking = await _context.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Car).ThenInclude(c => c!.CarBrand)
+            .Include(b => b.BookingFinancial)
+            .FirstOrDefaultAsync(b => b.BookingId == bookingId && !b.IsDeleted)
+            ?? throw new KeyNotFoundException("Booking không tồn tại");
+
+        bool isCustomer = booking.CustomerId == requestUserId;
+        bool isSupplier = booking.Car?.SupplierId == requestUserId;
+        if (!isCustomer && !isSupplier)
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập booking này");
+
+        // Use the car's actual supplierId to generate
+        var supplierId = booking.Car?.SupplierId ?? 0;
+        return await GenerateContractAsync(bookingId, supplierId);
+    }
+
     public async Task<ContractDto> GenerateContractAsync(int bookingId, int supplierId)
     {
         // Check if contract already exists
@@ -120,11 +150,16 @@ public class ContractService : IContractService
         if (booking.Car?.SupplierId != supplierId)
             throw new UnauthorizedAccessException("Bạn không phải chủ xe của booking này");
 
+        // Load supplier info
+        var supplier = await _context.Users
+            .Include(u => u.UserDetail)
+            .FirstOrDefaultAsync(u => u.UserId == supplierId);
+
         var draftStatusId = 6; // draft
         var contractCode = $"HD-{DateTime.UtcNow:yyyyMMdd}-{bookingId:D5}";
 
         // Generate standard terms
-        var terms = GenerateStandardTerms(booking);
+        var terms = GenerateStandardTerms(booking, supplier, contractCode);
 
         var contract = new Contract
         {
@@ -145,7 +180,9 @@ public class ContractService : IContractService
         await _context.Contracts.AddAsync(contract);
         await _context.SaveChangesAsync();
 
-        // Notify customer
+        var carInfo = $"{booking.Car?.CarBrand?.BrandName} {booking.Car?.CarModel}".Trim();
+
+        // Notify & email customer
         try
         {
             await _notification.SendAsync(booking.CustomerId,
@@ -153,6 +190,36 @@ public class ContractService : IContractService
                 "contract", bookingId, "booking");
         }
         catch { /* ignore */ }
+
+        try
+        {
+            var customer = booking.Customer;
+            if (!string.IsNullOrEmpty(customer?.Email))
+                await _email.SendContractNotificationAsync(
+                    customer.Email, customer.FullName ?? customer.Email,
+                    contractCode, bookingId, carInfo, "customer", terms);
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to send contract email to customer for booking {BookingId}", bookingId); }
+
+        // Notify & email supplier
+        try
+        {
+            await _notification.SendAsync(supplierId,
+                $"Hợp đồng #{contractCode} cho booking #{bookingId} đã được tạo.",
+                "contract", bookingId, "booking");
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to send contract notification to supplier {SupplierId}", supplierId); }
+
+        try
+        {
+            if (!string.IsNullOrEmpty(supplier?.Email))
+                await _email.SendContractNotificationAsync(
+                    supplier.Email, supplier.FullName ?? supplier.Email,
+                    contractCode, bookingId, carInfo, "supplier", terms);
+            else
+                _logger.LogWarning("Supplier {SupplierId} has no email, skipping contract email", supplierId);
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to send contract email to supplier {SupplierId} for booking {BookingId}", supplierId, bookingId); }
 
         return (await GetContractByIdAsync(contract.ContractId))!;
     }
@@ -408,57 +475,142 @@ public class ContractService : IContractService
         LicenseRejectionReason = user.UserDetail?.LicenseRejectionReason
     };
 
-    private static string GenerateStandardTerms(Booking booking)
+    private static string GenerateStandardTerms(Booking booking, User? supplier, string contractCode)
     {
         var car = booking.Car;
         var customer = booking.Customer;
         var totalPrice = booking.BookingFinancial?.TotalFare ?? 0;
         var days = Math.Max(1, (int)(booking.EndDate - booking.StartDate).TotalDays);
+        var pricePerDay = days > 0 ? totalPrice / days : totalPrice;
+        var now = DateTime.Now;
 
-        return $@"HỢP ĐỒNG THUÊ XE TỰ LÁI
+        // Supplier info
+        var supplierName   = supplier?.FullName ?? supplier?.Email ?? "Chủ xe";
+        var supplierPhone  = supplier?.Phone ?? "................................";
+        var supplierNationalId = supplier?.UserDetail?.NationalId ?? "................................";
+        var supplierAddress = supplier?.UserDetail?.Address ?? "................................";
 
-Mã đơn đặt: #{booking.BookingId}
+        // Customer info
+        var customerName   = customer?.FullName ?? customer?.Email ?? "................................";
+        var customerPhone  = customer?.Phone ?? "................................";
+        var customerNationalId = customer?.UserDetail?.NationalId ?? "................................";
+        var customerAddress = customer?.UserDetail?.Address ?? "................................";
+        var customerLicense  = customer?.UserDetail?.DrivingLicense ?? "................................";
 
-ĐIỀU 1: THÔNG TIN CÁC BÊN
-- Bên cho thuê (Supplier): Chủ sở hữu xe
-- Bên thuê (Customer): {customer?.FullName ?? customer?.Email ?? "N/A"}
+        // Car info
+        var carBrand       = car?.CarBrand?.BrandName ?? "................................";
+        var carModel       = car?.CarModel ?? "................................";
+        var licensePlate   = car?.LicensePlate ?? "................................";
+        var carColor       = car?.Color ?? "................................";
+        var carYear        = car?.Year?.ToString() ?? "........";
+        var carSeats       = car?.Seats?.ToString() ?? "..";
 
-ĐIỀU 2: THÔNG TIN XE CHO THUÊ
-- Xe: {car?.CarBrand?.BrandName} {car?.CarModel}
-- Biển số: {car?.LicensePlate ?? "N/A"}
-- Số chỗ: {car?.Seats ?? 0}
-- Nhiên liệu: Theo thông số xe
+        return $@"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+Độc lập – Tự do – Hạnh phúc
+────────────────────────────────────────
 
-ĐIỀU 3: THỜI GIAN & ĐỊA ĐIỂM
-- Thời gian thuê: {booking.StartDate:dd/MM/yyyy} đến {booking.EndDate:dd/MM/yyyy} ({days} ngày)
-- Địa điểm nhận xe: {booking.PickupLocation ?? "Theo thỏa thuận"}
-- Địa điểm trả xe: {booking.DropoffLocation ?? "Theo thỏa thuận"}
+HỢP ĐỒNG THUÊ XE Ô TÔ TỰ LÁI
+Số hợp đồng: {contractCode}
 
-ĐIỀU 4: GIÁ THUÊ & THANH TOÁN
-- Giá thuê: {totalPrice:N0} VNĐ
-- Phương thức: Theo quy định hệ thống
+Hôm nay, ngày {now.Day:D2} tháng {now.Month:D2} năm {now.Year}, hai bên gồm:
 
-ĐIỀU 5: TRÁCH NHIỆM BÊN THUÊ
-1. Sử dụng xe đúng mục đích, không vi phạm pháp luật
-2. Bảo quản xe trong suốt thời gian thuê
-3. Trả xe đúng hạn, đúng tình trạng
-4. Chịu chi phí sửa chữa nếu có hư hỏng do lỗi người thuê
-5. Không cho bên thứ ba mượn/sử dụng xe
-6. Phải có bằng lái xe hợp lệ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÊN CHO THUÊ (BÊN A):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Họ và tên       : {supplierName}
+CCCD/CMND số    : {supplierNationalId}
+Địa chỉ         : {supplierAddress}
+Số điện thoại   : {supplierPhone}
 
-ĐIỀU 6: TRÁCH NHIỆM BÊN CHO THUÊ  
-1. Bàn giao xe đúng thời gian, đúng tình trạng
-2. Cung cấp đầy đủ giấy tờ xe hợp lệ
-3. Hỗ trợ kỹ thuật khi xe gặp sự cố (không do lỗi người thuê)
-4. Hoàn tiền theo chính sách khi hủy hợp đồng
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÊN THUÊ (BÊN B):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Họ và tên       : {customerName}
+CCCD/CMND số    : {customerNationalId}
+Giấy phép lái xe: {customerLicense}
+Địa chỉ         : {customerAddress}
+Số điện thoại   : {customerPhone}
 
-ĐIỀU 7: BỒI THƯỜNG & XỬ LÝ VI PHẠM
-- Vi phạm hợp đồng: Bồi thường theo thiệt hại thực tế
-- Trả xe trễ: Tính phí phát sinh theo ngày
-- Hư hỏng xe: Đền bù theo biên bản kiểm tra
+Sau khi thống nhất, hai bên ký kết hợp đồng với các điều khoản sau:
 
-ĐIỀU 8: ĐIỀU KHOẢN CHUNG
-- Hợp đồng có hiệu lực khi cả hai bên ký xác nhận
-- Tranh chấp giải quyết theo pháp luật Việt Nam";
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 1: ĐẶC ĐIỂM TÀI SẢN THUÊ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Bên A đồng ý cho Bên B thuê 01 xe ô tô với thông tin:
+
+  Nhãn hiệu       : {carBrand} {carModel}
+  Năm sản xuất    : {carYear}
+  Biển kiểm soát  : {licensePlate}
+  Màu sơn         : {carColor}
+  Số chỗ ngồi     : {carSeats} chỗ
+
+Giấy tờ kèm theo xe:
+  - Bản sao công chứng Giấy đăng ký xe
+  - Giấy chứng nhận kiểm định (bản gốc)
+  - Giấy chứng nhận bảo hiểm TNDS (bản gốc)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 2: THỜI HẠN VÀ GIÁ THUÊ XE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Thời gian thuê  : Từ {booking.StartDate:HH:mm dd/MM/yyyy} đến {booking.EndDate:HH:mm dd/MM/yyyy}
+  Số ngày thuê    : {days} ngày
+  Giá thuê        : {pricePerDay:N0} VNĐ/ngày
+  Tổng tiền thuê  : {totalPrice:N0} VNĐ
+  Địa điểm nhận xe: {booking.PickupLocation ?? "Theo thỏa thuận"}
+  Địa điểm trả xe : {booking.DropoffLocation ?? "Theo thỏa thuận"}
+  Chi phí trả trễ : 50.000 VNĐ/giờ phát sinh
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN & ĐẶT CỌC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Tiền thuê xe : {totalPrice:N0} VNĐ – thanh toán qua hệ thống khi đặt xe
+  Tiền đặt cọc : 5.000.000 VNĐ – hoàn trả sau khi trả xe nguyên vẹn
+  Phương thức  : Thanh toán online (Stripe) hoặc tiền mặt khi nhận xe
+
+Tiền cọc và tài sản thế chấp được hoàn trả sau khi Bên B bàn giao xe
+và thanh toán đầy đủ các chi phí phát sinh (nếu có).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 4: TRÁCH NHIỆM CỦA CÁC BÊN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.1. Trách nhiệm của Bên A (Bên cho thuê):
+  1. Giao xe và giấy tờ đúng thời gian, địa điểm, tình trạng thỏa thuận
+  2. Chịu trách nhiệm pháp lý về nguồn gốc và quyền sở hữu xe
+  3. Hỗ trợ kỹ thuật khi xe gặp sự cố không do lỗi người thuê
+  4. Hoàn tiền theo chính sách khi hủy hợp đồng hợp lệ
+
+4.2. Trách nhiệm của Bên B (Bên thuê):
+  1. Sử dụng xe đúng mục đích, không vi phạm pháp luật
+  2. Không chở hàng cấm, vũ khí, chất cháy nổ
+  3. Không cầm cố, thế chấp hoặc cho thuê lại xe dưới bất kỳ hình thức nào
+  4. Tự chi trả: xăng dầu, phí cầu đường, bến bãi trong thời gian thuê
+  5. Chịu toàn bộ trách nhiệm dân sự, hình sự và nộp phạt vi phạm giao thông
+     (kể cả phạt nguội) phát sinh trong thời gian thuê xe
+  6. Trả xe đúng hạn, đúng địa điểm và đúng tình trạng ban đầu
+  7. Phải có bằng lái xe hợp lệ, phù hợp chủng loại xe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 5: BỒI THƯỜNG & XỬ LÝ VI PHẠM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - Nếu xe bị hư hỏng do lỗi Bên B: bồi thường 100% chi phí sửa chữa
+    chính hãng và chi trả tiền thuê cho những ngày xe nằm gara
+  - Trả xe trễ: tính phí 50.000 VNĐ/giờ kể từ thời điểm hết hạn
+  - Vi phạm giao thông: Bên B chịu hoàn toàn, Bên A không chịu trách nhiệm
+  - Mất mát tài sản trên xe: Bên B chịu trách nhiệm bồi thường
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 6: ĐIỀU KHOẢN CHUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - Hợp đồng có hiệu lực kể từ khi cả hai bên xác nhận chữ ký điện tử
+  - Chữ ký điện tử trên hệ thống có giá trị pháp lý tương đương chữ ký tay
+  - Hợp đồng được lập thành 02 bản (01 bản lưu hệ thống, 01 bản gửi email)
+  - Tranh chấp phát sinh: ưu tiên thương lượng; nếu không thành, đưa ra
+    Tòa án nhân dân có thẩm quyền tại Việt Nam để giải quyết
+
+────────────────────────────────────────
+        ĐẠI DIỆN BÊN A                    ĐẠI DIỆN BÊN B
+   (Ký tên – Chủ xe/Nhà cung cấp)      (Ký tên – Người thuê xe)
+
+   {supplierName}                        {customerName}";
     }
 }

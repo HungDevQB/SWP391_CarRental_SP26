@@ -71,7 +71,7 @@ const ChatWindow = ({ currentUser, initialSelectedUser, suppliers = [] }) => {
 
     // Load lịch sử chat
     fetch(
-      `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/conversation/${selectedUser.id}`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:5277"}/api/chat/conversation/${selectedUser.id}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

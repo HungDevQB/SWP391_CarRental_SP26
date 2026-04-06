@@ -91,8 +91,8 @@ const SupplierCarDashboard = () => {
   const navigate = useNavigate();
   
   // Chat data
-  const demoUserId = "user1";
-  const supplierId = user?.username || "supplier1";
+  const demoUserId = user?.userId || user?.id || user?.username;
+  const supplierId = user?.userId || user?.id || user?.username;
   const supplierRole = user?.role || "supplier";
 
   console.log('[SupplierCarDashboard] user:', user);
@@ -211,14 +211,18 @@ const SupplierCarDashboard = () => {
           });
         }
 
-        // Generate recent activities
-        const activities = [
-          { type: 'booking', message: 'Đơn đặt xe mới từ khách hàng Nguyễn Văn A', time: '5 phút trước', icon: FaClipboardList, color: 'text-blue-600' },
-          { type: 'payment', message: 'Nhận được thanh toán 2.500.000 VNĐ', time: '15 phút trước', icon: FaDollarSign, color: 'text-green-600' },
-          { type: 'car', message: 'Xe Toyota Camry đã được trả về', time: '1 giờ trước', icon: FaCar, color: 'text-purple-600' },
-          { type: 'maintenance', message: 'Xe Honda Civic cần bảo trì', time: '2 giờ trước', icon: FaExclamationTriangle, color: 'text-orange-600' },
-          { type: 'review', message: 'Nhận được đánh giá 5 sao từ khách hàng', time: '3 giờ trước', icon: FaStar, color: 'text-yellow-600' },
-        ];
+        // Generate recent activities from real orders data
+        const activities = (ordersData || []).slice(0, 5).map(order => {
+          const status = (order.statusName || '').toLowerCase();
+          const car = order.carModel || 'xe';
+          const customer = order.customerName || 'khách hàng';
+          const time = order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '';
+          if (status === 'confirmed' || status === 'pending')
+            return { type: 'booking', message: `Đơn đặt xe ${car} từ ${customer}`, time, icon: FaClipboardList, color: 'text-blue-600' };
+          if (status === 'completed')
+            return { type: 'car', message: `Xe ${car} đã hoàn thành chuyến`, time, icon: FaCar, color: 'text-purple-600' };
+          return { type: 'booking', message: `Đơn #${order.bookingId} - ${car}`, time, icon: FaClipboardList, color: 'text-gray-600' };
+        });
 
         // Map backend response to frontend state
         setDashboardData({
@@ -226,7 +230,7 @@ const SupplierCarDashboard = () => {
           totalBookings: summaryData?.totalBookings || ordersData?.length || 0,
           totalRevenue: summaryData?.totalRevenue || 0,
           monthlyRevenue: summaryData?.monthlyRevenue || 0,
-          newCustomers: summaryData?.newCustomers || 12,
+          newCustomers: summaryData?.newCustomers || 0,
           availableCars: availableCars,
           pendingOrders: summaryData?.pendingBookings || pendingOrders,
           confirmedOrders: summaryData?.activeBookings || confirmedOrders,

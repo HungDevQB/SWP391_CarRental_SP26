@@ -11,6 +11,7 @@ public interface IContractService
     Task<IEnumerable<ContractListDto>> GetContractsBySupplierAsync(int supplierId);
     Task<IEnumerable<ContractListDto>> GetContractsByCustomerAsync(int customerId);
     Task<ContractDto> GenerateContractAsync(int bookingId, int supplierId);
+    Task<ContractDto> EnsureContractAsync(int bookingId, int requestUserId);
     Task<ContractDto> SignContractAsync(int contractId, int userId, string signature);
     Task<ContractDto> UpdateContractTermsAsync(int contractId, int supplierId, string terms);
 

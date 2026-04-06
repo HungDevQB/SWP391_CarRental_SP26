@@ -567,7 +567,7 @@ useEffect(() => {
                                 ))}
                               </div>
                               <span className="text-gray-600 font-medium">
-                                {favorite.car?.rating || 4.8} ({favorite.car?.reviewCount || 12} đánh giá)
+                                {favorite.car?.rating || 'N/A'} ({favorite.car?.reviewCount || 0} đánh giá)
                               </span>
                             </div>
                           </div>
@@ -575,7 +575,7 @@ useEffect(() => {
                           <div className="flex flex-col items-end gap-4">
                             <div className="text-right">
                               <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                {formatVND(favorite.car?.dailyRate || 500000)}
+                                {favorite.car?.dailyRate ? formatVND(favorite.car.dailyRate) : 'Liên hệ'}
                               </div>
                               <div className="text-sm text-gray-500">/ ngày</div>
                             </div>

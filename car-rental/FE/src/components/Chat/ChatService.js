@@ -11,7 +11,7 @@ class ChatService {
   async connect() {
     const token = localStorage.getItem('token');
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/hub/chat`, {
+      .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:5277'}/hub/chat`, {
         accessTokenFactory: () => token
       })
       .withAutomaticReconnect()

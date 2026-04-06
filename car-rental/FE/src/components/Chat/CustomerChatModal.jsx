@@ -43,7 +43,7 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         try {
           const token = localStorage.getItem("token")
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/conversation/${supplier.id}`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:5277"}/api/chat/conversation/${supplier.id}`,
             {
               headers: {
                 Authorization: token ? `Bearer ${token}` : "",
@@ -125,7 +125,7 @@ const CustomerChatModal = ({ open, onClose, customer, supplier }) => {
         formData.append("file", img)
         try {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/api/chat/upload-image`,
+            `${import.meta.env.VITE_API_URL || "http://localhost:5277"}/api/chat/upload-image`,
             {
               method: "POST",
               body: formData,

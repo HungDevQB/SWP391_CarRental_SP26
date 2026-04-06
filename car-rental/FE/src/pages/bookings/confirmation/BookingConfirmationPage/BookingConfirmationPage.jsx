@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { getCarById, post, getProfile } from "@/services/api"
+import { getCarById, post, getProfile, getContractByBookingId, signContract, ensureContract } from "@/services/api"
 import {
   FaCarSide,
   FaUser,
@@ -569,6 +569,11 @@ const BookingConfirmationPage = () => {
   }, [])
   const [isApplyingPromo, setIsApplyingPromo] = useState(false)
   const [showTermsDetails, setShowTermsDetails] = useState(false)
+  const [showContractModal, setShowContractModal] = useState(false)
+  const [contract, setContract] = useState(null)
+  const [contractAgreed, setContractAgreed] = useState(false)
+  const [isSigning, setIsSigning] = useState(false)
+  const [createdBookingId, setCreatedBookingId] = useState(null)
   const [contactInfo, setContactInfo] = useState({
     fullName: "",
     phone: "",
@@ -797,6 +802,46 @@ const BookingConfirmationPage = () => {
     return Object.keys(errors).length === 0
   }
 
+  const handleSignAndPay = async () => {
+    if (!contractAgreed) {
+      toast.error("Vui lòng đọc và đồng ý với hợp đồng")
+      return
+    }
+    try {
+      setIsSigning(true)
+      // Ký hợp đồng với chữ ký là tên đầy đủ của customer
+      if (contract?.contractId) {
+        await signContract(contract.contractId, contactInfo.fullName || "Đồng ý")
+      }
+      setShowContractModal(false)
+      toast.success("Đã ký hợp đồng! Chuyển đến thanh toán...")
+      setTimeout(() => {
+        navigate("/payment", {
+          state: {
+            bookingId: createdBookingId,
+            priceBreakdown,
+            depositAmount: priceBreakdown.deposit,
+            collateralAmount: 5000000,
+            withDriver,
+            deliveryRequested,
+            customerInfo: { ...contactInfo },
+            bookingInfo: {
+              carId: bookingData.carId,
+              pickupDateTime: bookingData.pickupDateTime,
+              dropoffDateTime: bookingData.dropoffDateTime,
+              pickupLocation: contactInfo.pickupAddress,
+              dropoffLocation: contactInfo.dropoffAddress,
+            },
+          }
+        })
+      }, 800)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Ký hợp đồng thất bại")
+    } finally {
+      setIsSigning(false)
+    }
+  }
+
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
       toast.error("Vui lòng nhập mã giảm giá")
@@ -828,6 +873,141 @@ const BookingConfirmationPage = () => {
     }
   }
 
+  const generateLocalContractTerms = (bookingId, contractCode) => {
+    const now = new Date()
+    const pad = (n) => String(n).padStart(2, "0")
+    const dateStr = `${pad(now.getDate())} tháng ${pad(now.getMonth() + 1)} năm ${now.getFullYear()}`
+
+    const supplierName = car?.supplierName || "................................"
+    const supplierPhone = car?.supplierPhone || "................................"
+    const supplierAddress = car?.location || car?.regionName || "................................"
+
+    const customerName = contactInfo.fullName || "................................"
+    const customerPhone = contactInfo.phone || "................................"
+    const customerEmail = contactInfo.email || "................................"
+    const pickupAddr = contactInfo.pickupAddress || "Theo thỏa thuận"
+    const dropoffAddr = contactInfo.dropoffAddress || "Theo thỏa thuận"
+
+    const carBrand = car?.brand || car?.carBrand || "................................"
+    const carModel = car?.carModel || car?.model || "................................"
+    const licensePlate = car?.licensePlate || car?.license_plate || "................................"
+    const carColor = car?.color || "................................"
+    const carYear = car?.year || car?.manufactureYear || "......"
+    const carSeats = car?.numOfSeats || car?.seats || ".."
+
+    const startDate = bookingData?.pickupDateTime ? new Date(bookingData.pickupDateTime) : null
+    const endDate = bookingData?.dropoffDateTime ? new Date(bookingData.dropoffDateTime) : null
+    const formatDt = (d) => d ? `${pad(d.getHours())}:${pad(d.getMinutes())} ngày ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}` : "................................"
+    const days = startDate && endDate ? Math.max(1, Math.ceil((endDate - startDate) / 86400000)) : 1
+    const totalPrice = priceBreakdown?.total || priceBreakdown?.basePrice || 0
+    const pricePerDay = days > 0 ? Math.round(totalPrice / days) : totalPrice
+    const formatVnd = (n) => Number(n).toLocaleString("vi-VN")
+    const code = contractCode || `HD-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${String(bookingId).padStart(5,"0")}`
+
+    return `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+Độc lập – Tự do – Hạnh phúc
+────────────────────────────────────────
+
+HỢP ĐỒNG THUÊ XE Ô TÔ TỰ LÁI
+Số hợp đồng: ${code}
+
+Hôm nay, ngày ${dateStr}, hai bên gồm:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÊN CHO THUÊ (BÊN A):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Đơn vị         : ${supplierName}
+Địa chỉ         : ${supplierAddress}
+Số điện thoại   : ${supplierPhone}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÊN THUÊ (BÊN B):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Họ và tên       : ${customerName}
+Số điện thoại   : ${customerPhone}
+Email           : ${customerEmail}
+
+Sau khi thống nhất, hai bên ký kết hợp đồng với các điều khoản sau:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 1: ĐẶC ĐIỂM TÀI SẢN THUÊ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Bên A đồng ý cho Bên B thuê 01 xe ô tô với thông tin:
+
+  Nhãn hiệu       : ${carBrand} ${carModel}
+  Năm sản xuất    : ${carYear}
+  Biển kiểm soát  : ${licensePlate}
+  Màu sơn         : ${carColor}
+  Số chỗ ngồi     : ${carSeats} chỗ
+
+Giấy tờ kèm theo xe:
+  - Bản sao công chứng Giấy đăng ký xe
+  - Giấy chứng nhận kiểm định (bản gốc)
+  - Giấy chứng nhận bảo hiểm TNDS (bản gốc)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 2: THỜI HẠN VÀ GIÁ THUÊ XE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Thời gian thuê  : Từ ${formatDt(startDate)} đến ${formatDt(endDate)}
+  Số ngày thuê    : ${days} ngày
+  Giá thuê        : ${formatVnd(pricePerDay)} VNĐ/ngày
+  Tổng tiền thuê  : ${formatVnd(totalPrice)} VNĐ
+  Địa điểm nhận xe: ${pickupAddr}
+  Địa điểm trả xe : ${dropoffAddr}
+  Chi phí trả trễ : 50.000 VNĐ/giờ phát sinh
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 3: PHƯƠNG THỨC THANH TOÁN & ĐẶT CỌC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Tiền thuê xe : ${formatVnd(totalPrice)} VNĐ – thanh toán qua hệ thống khi đặt xe
+  Tiền đặt cọc : 5.000.000 VNĐ – hoàn trả sau khi trả xe nguyên vẹn
+  Phương thức  : Thanh toán online (Stripe) hoặc tiền mặt khi nhận xe
+
+Tiền cọc và tài sản thế chấp được hoàn trả sau khi Bên B bàn giao xe
+và thanh toán đầy đủ các chi phí phát sinh (nếu có).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 4: TRÁCH NHIỆM CỦA CÁC BÊN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.1. Trách nhiệm của Bên A (Bên cho thuê):
+  1. Giao xe và giấy tờ đúng thời gian, địa điểm, tình trạng thỏa thuận
+  2. Chịu trách nhiệm pháp lý về nguồn gốc và quyền sở hữu xe
+  3. Hỗ trợ kỹ thuật khi xe gặp sự cố không do lỗi người thuê
+  4. Hoàn tiền theo chính sách khi hủy hợp đồng hợp lệ
+
+4.2. Trách nhiệm của Bên B (Bên thuê):
+  1. Sử dụng xe đúng mục đích, không vi phạm pháp luật
+  2. Không chở hàng cấm, vũ khí, chất cháy nổ
+  3. Không cầm cố, thế chấp hoặc cho thuê lại xe dưới bất kỳ hình thức nào
+  4. Tự chi trả: xăng dầu, phí cầu đường, bến bãi trong thời gian thuê
+  5. Chịu toàn bộ trách nhiệm dân sự, hình sự và nộp phạt vi phạm giao thông
+     (kể cả phạt nguội) phát sinh trong thời gian thuê xe
+  6. Trả xe đúng hạn, đúng địa điểm và đúng tình trạng ban đầu
+  7. Phải có bằng lái xe hợp lệ, phù hợp chủng loại xe
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 5: BỒI THƯỜNG & XỬ LÝ VI PHẠM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - Nếu xe bị hư hỏng do lỗi Bên B: bồi thường 100% chi phí sửa chữa
+    chính hãng và chi trả tiền thuê cho những ngày xe nằm gara
+  - Trả xe trễ: tính phí 50.000 VNĐ/giờ kể từ thời điểm hết hạn
+  - Vi phạm giao thông: Bên B chịu hoàn toàn, Bên A không chịu trách nhiệm
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ĐIỀU 6: ĐIỀU KHOẢN CHUNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - Hợp đồng có hiệu lực kể từ khi cả hai bên xác nhận chữ ký điện tử
+  - Chữ ký điện tử trên hệ thống có giá trị pháp lý tương đương chữ ký tay
+  - Tranh chấp phát sinh: ưu tiên thương lượng; nếu không thành, đưa ra
+    Tòa án nhân dân có thẩm quyền tại Việt Nam để giải quyết
+
+────────────────────────────────────────
+        ĐẠI DIỆN BÊN A                    ĐẠI DIỆN BÊN B
+   (Ký tên – Đại diện công ty)          (Ký tên – Người thuê xe)
+
+   ${supplierName}                        ${customerName}`
+  }
+
   const handleConfirm = async () => {
     if (!validateContactInfo()) {
       toast.error("Vui lòng điền đầy đủ thông tin liên hệ")
@@ -848,6 +1028,20 @@ const BookingConfirmationPage = () => {
         withDriver: withDriver,
         deliveryRequested: deliveryRequested,
       })
+
+      // Tạo booking trước
+      const created = await post('/api/bookings', {
+        carId: bookingData.carId,
+        startDate: bookingData.pickupDateTime,
+        endDate: bookingData.dropoffDateTime,
+        pickupLocation: contactInfo.pickupAddress,
+        dropoffLocation: contactInfo.dropoffAddress,
+        paymentMethod: 'stripe',
+      })
+      const newBookingId = created.bookingId
+      setCreatedBookingId(newBookingId)
+
+      // Lưu thông tin
       const bookingInfo = {
         carId: bookingData.carId,
         pickupLocation: contactInfo.pickupAddress,
@@ -861,17 +1055,20 @@ const BookingConfirmationPage = () => {
       localStorage.setItem("lastBookingInfo", JSON.stringify(bookingInfo))
       localStorage.setItem("lastPriceBreakdown", JSON.stringify(priceBreakdown))
       localStorage.setItem("lastCustomerInfo", JSON.stringify(contactInfo))
-      toast.success("Thông tin đã được lưu! Chuyển đến trang thanh toán.")
-      const navigationData = {
-        bookingInfo: bookingInfo,
-        priceBreakdown,
-        depositAmount: priceBreakdown.deposit,
-        collateralAmount: 5000000,
-        withDriver,
-        deliveryRequested,
-        customerInfo: { ...contactInfo },
-      }
-      navigate("/payment", { state: navigationData })
+
+      // Hiển thị modal ngay với nội dung sinh trên FE (không cần đợi API)
+      const localTerms = generateLocalContractTerms(newBookingId, null)
+      setContract({ termsAndConditions: localTerms, contractId: null })
+      setContractAgreed(false)
+      setShowContractModal(true)
+
+      // Gọi ensureContract ở background để lưu DB, cập nhật contractId nếu thành công
+      ensureContract(newBookingId).then(res => {
+        const dbContract = res?.data || null
+        if (dbContract?.contractId) {
+          setContract(prev => ({ ...prev, contractId: dbContract.contractId, contractCode: dbContract.contractCode }))
+        }
+      }).catch(() => { /* ignore, modal đã hiện */ })
     } catch (err) {
       console.error("Lỗi trong handleConfirm:", err)
       if (err.response?.status === 400) {
@@ -1181,6 +1378,82 @@ const BookingConfirmationPage = () => {
       </main>
 
       <Footer />
+
+      {/* Contract Modal */}
+      {showContractModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-2xl flex items-center justify-center">
+                  <FaFileAlt className="text-blue-600 text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Hợp đồng thuê xe</h2>
+                  {contract?.contractCode && (
+                    <p className="text-sm text-gray-500">Mã hợp đồng: {contract.contractCode}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Contract Terms — scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+                {(contract?.termsAndConditions || "").split("\n").map((line, i) => {
+                  const isSectionDivider = line.startsWith("━") || line.startsWith("─")
+                  const isHeader = line.startsWith("CỘNG HÒA") || line.startsWith("Độc lập") || line.startsWith("HỢP ĐỒNG THUÊ")
+                  const isArticle = /^ĐIỀU \d+:/.test(line) || /^BÊN (CHO THUÊ|THUÊ)/.test(line)
+                  const isEmpty = line.trim() === ""
+
+                  if (isSectionDivider) return <hr key={i} className="border-gray-300 my-2" />
+                  if (isEmpty) return <div key={i} className="h-2" />
+                  if (isHeader) return <p key={i} className="text-center font-bold text-gray-800 text-sm">{line}</p>
+                  if (isArticle) return <p key={i} className="font-bold text-blue-700 text-sm mt-3 mb-1">{line}</p>
+                  return <p key={i} className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{line}</p>
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 space-y-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={contractAgreed}
+                  onChange={(e) => setContractAgreed(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  Tôi đã đọc, hiểu và đồng ý với toàn bộ điều khoản trong hợp đồng thuê xe này.
+                  Chữ ký điện tử của tôi có giá trị pháp lý tương đương chữ ký tay.
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowContractModal(false)}
+                  className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Quay lại
+                </button>
+                <button
+                  onClick={handleSignAndPay}
+                  disabled={!contractAgreed || isSigning}
+                  className={`flex-1 py-3 rounded-2xl font-bold text-white transition-all ${
+                    contractAgreed && !isSigning
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:scale-[1.02]"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  {isSigning ? "Đang ký..." : "Ký hợp đồng & Thanh toán"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Scroll to Top Button */}
       {showScrollToTop && (

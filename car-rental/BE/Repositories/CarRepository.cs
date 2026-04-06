@@ -87,12 +87,17 @@ public class CarRepository : BaseRepository<Car>, ICarRepository
 
     public async Task<bool> IsAvailableAsync(int carId, DateTime startDate, DateTime endDate, int? excludeBookingId = null)
     {
-        // Exclude terminal statuses: cancelled(5), completed(4), rejected(22)
-        var terminalStatuses = new[] { 4, 5, 22 };
+        // Look up terminal status IDs by name (not hardcoded)
+        var terminalStatusNames = new[] { "cancelled", "completed", "rejected", "expired" };
+        var terminalStatusIds = await _context.Statuses
+            .Where(s => terminalStatusNames.Contains(s.StatusName))
+            .Select(s => s.StatusId)
+            .ToListAsync();
+
         var query = _context.Bookings
             .Where(b => b.CarId == carId &&
                         !b.IsDeleted &&
-                        !terminalStatuses.Contains(b.StatusId) &&
+                        !terminalStatusIds.Contains(b.StatusId) &&
                         b.StartDate < endDate &&
                         b.EndDate > startDate);
 
