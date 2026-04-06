@@ -7,5 +7,5 @@ public interface IEmailService
     Task SendPasswordResetAsync(string toEmail, string toName, string resetToken);
     Task SendOtpAsync(string toEmail, string otp);
     Task SendBookingStatusUpdateAsync(string toEmail, string toName, int bookingId, string newStatus);
-    Task SendContractNotificationAsync(string toEmail, string toName, string contractCode, int bookingId, string carInfo, string role, string? contractTerms = null);
+    Task SendContractNotificationAsync(string toEmail, string toName, string contractCode, int bookingId, string carInfo, string role, string? contractTerms = null, string? nationalIdFront = null, string? nationalIdBack = null, string? licenseFront = null, string? licenseBack = null);
 }

@@ -36,10 +36,10 @@ const SupplierProfile = () => {
       const data = await getProfile();
       setProfile(data);
       setFormData({
-        name: data.userDetail?.fullName || data.userDetail?.name || "",
+        name: data.fullName || data.userDetail?.fullName || "",
         email: data.email || "",
         phone: data.phone || "",
-        address: data.userDetail?.address || "",
+        address: data.address || data.userDetail?.address || "",
         countryCode: data.countryCode || "+84",
         username: data.username || "",
       });
@@ -97,15 +97,10 @@ const SupplierProfile = () => {
       setSaving(true);
       const cleanedPhone = formData.phone.replace(/\s/g, "");
       const dataToSend = {
-        userId: getItem("userId") || profile?.userId || 59,
-        username: formData.username?.trim() || profile?.username || "",
-        email: formData.email.trim(),
+        fullName: formData.name.trim(),
         phone: cleanedPhone,
         countryCode: formData.countryCode?.trim() || "+84",
-        userDetail: {
-          fullName: formData.name.trim(),
-          address: formData.address?.trim() || "",
-        },
+        address: formData.address?.trim() || "",
       };
 
       console.log("DATA SENT TO API:", dataToSend);
@@ -114,11 +109,9 @@ const SupplierProfile = () => {
       // Cập nhật profile state ngay lập tức
       setProfile({
         ...profile,
-        ...dataToSend,
-        userDetail: {
-          ...profile.userDetail,
-          ...dataToSend.userDetail,
-        },
+        fullName: dataToSend.fullName,
+        phone: dataToSend.phone,
+        address: dataToSend.address,
       });
 
       setIsEditing(false);
@@ -138,10 +131,10 @@ const SupplierProfile = () => {
 
   const handleCancel = () => {
     setFormData({
-      name: profile.userDetail?.fullName || profile.userDetail?.name || "",
+      name: profile.fullName || profile.userDetail?.fullName || "",
       email: profile.email || "",
       phone: profile.phone || "",
-      address: profile.userDetail?.address || "",
+      address: profile.address || profile.userDetail?.address || "",
       countryCode: profile.countryCode || "+84",
       username: profile.username || "",
     });
@@ -285,7 +278,7 @@ const SupplierProfile = () => {
                       />
                     ) : (
                       <p className="text-lg font-medium text-gray-800 ml-9">
-                        {profile.userDetail?.fullName || profile.userDetail?.name || "Chưa cập nhật"}
+                        {profile.fullName || profile.userDetail?.fullName || "Chưa cập nhật"}
                       </p>
                     )}
                   </div>
@@ -386,7 +379,7 @@ const SupplierProfile = () => {
                     />
                   ) : (
                     <p className="text-lg font-medium text-gray-800 ml-9">
-                      {profile.userDetail?.address || "Chưa cập nhật"}
+                      {profile.address || profile.userDetail?.address || "Chưa cập nhật"}
                     </p>
                   )}
                 </div>

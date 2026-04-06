@@ -33,6 +33,8 @@ public class BookingListDto
     public string? CarBrand { get; set; }
     public string? CarThumbnail { get; set; }
     public string? CustomerName { get; set; }
+    public string? CustomerEmail { get; set; }
+    public string? LicensePlate { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public decimal TotalPrice { get; set; }

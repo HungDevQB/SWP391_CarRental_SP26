@@ -1202,16 +1202,21 @@ export const getSupplierOrders = async () => {
     const raw = Array.isArray(res.data) ? res.data : (res.data?.data || []);
     return raw.map(b => {
         const carModel = b.carModel || b.car?.carModel || b.car?.model || '';
-        const customerName = b.customerName || b.customer?.userDetail?.fullName || b.customer?.fullName || b.customer?.name || '';
+        const licensePlate = b.licensePlate || b.car?.licensePlate || '';
+        const customerEmail = b.customerEmail || b.customer?.email || '';
+        const customerName = b.customerName || b.customer?.userDetail?.fullName || b.customer?.fullName || b.customer?.name || customerEmail || '';
         return {
             ...b,
             statusName: b.statusName || b.status?.statusName || '',
             carModel,
             customerName,
-            // nested car object for components that read order.car?.model
-            car: b.car ? { ...b.car, model: b.car.model || b.car.carModel || carModel } : { model: carModel, carModel },
-            // nested customer object for components that read order.customer?.name
-            customer: b.customer ? { ...b.customer, name: b.customer.name || customerName } : { name: customerName },
+            licensePlate,
+            car: b.car
+                ? { ...b.car, model: b.car.model || b.car.carModel || carModel, licensePlate: b.car.licensePlate || licensePlate }
+                : { model: carModel, carModel, licensePlate },
+            customer: b.customer
+                ? { ...b.customer, name: b.customer.name || customerName, email: b.customer.email || customerEmail }
+                : { name: customerName, email: customerEmail },
             totalAmount: b.totalPrice || b.totalAmount || b.totalFare || b.bookingFinancial?.totalFare || 0,
             totalPrice: b.totalPrice || b.totalAmount || b.bookingFinancial?.totalFare || 0,
             pickupDateTime: b.pickupDateTime || b.startDate || null,
@@ -1230,12 +1235,10 @@ export const getSupplierDashboardSummary = async () => {
     const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : (bookingsRes.data?.data || []);
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || b.totalFare || 0), 0);
     return {
-        data: {
-            totalCars: cars.length,
-            totalBookings: bookings.length,
-            pendingBookings: bookings.filter(b => b.status === 'pending').length,
-            totalRevenue,
-        }
+        totalCars: cars.length,
+        totalBookings: bookings.length,
+        pendingBookings: bookings.filter(b => (b.statusName || b.status?.statusName || '').toLowerCase() === 'pending').length,
+        totalRevenue,
     };
 };
 
@@ -1246,7 +1249,23 @@ export const getSupplierRecentBookings = async () => {
 
 export const getSupplierMonthlyStats = async () => {
     const res = await api.get('/api/bookings/supplier/bookings').catch(() => ({ data: [] }));
-    return res.data;
+    const bookings = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    // Build last 6 months stats
+    const now = new Date();
+    const months = [];
+    const revenueByMonth = [];
+    const bookingsByMonth = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(`${d.getMonth() + 1}/${d.getFullYear()}`);
+        const inMonth = bookings.filter(b => {
+            const created = new Date(b.startDate || b.createdAt || 0);
+            return created.getMonth() === d.getMonth() && created.getFullYear() === d.getFullYear();
+        });
+        revenueByMonth.push(inMonth.reduce((sum, b) => sum + (b.totalPrice || b.totalFare || 0), 0));
+        bookingsByMonth.push(inMonth.length);
+    }
+    return { months, revenueByMonth, bookingsByMonth };
 };
 
 export const getNextBookingId = async () => {

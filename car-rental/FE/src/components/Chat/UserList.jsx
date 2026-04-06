@@ -23,35 +23,20 @@ const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
     onSelect(user);
   };
 
-  useEffect(() => {
-    if (!currentUserId) {
-      setLoading(false);
-      return;
-    }
-    
+  const fetchConversations = (silent = false) => {
+    if (!currentUserId) { if (!silent) setLoading(false); return; }
     const token = localStorage.getItem('token');
-    if (!token) {
-      setError('auth');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    
+    if (!token) { setError('auth'); if (!silent) setLoading(false); return; }
+    if (!silent) { setLoading(true); setError(null); }
     fetch(`${API_BASE}/api/chat/conversations`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
-        if (!res.ok) {
-          if (res.status === 401) throw new Error('auth');
-          throw new Error('network');
-        }
+        if (!res.ok) { if (res.status === 401) throw new Error('auth'); throw new Error('network'); }
         return res.json();
       })
       .then(json => {
         const raw = Array.isArray(json) ? json : (json.data || []);
-        // Map ChatConversationDto → user object frontend expects
         const data = raw.map(c => ({
           id: c.userId,
           userId: c.userId,
@@ -61,13 +46,20 @@ const UserList = ({ currentUserId, onSelect, initialSelectedUser }) => {
           lastMessage: c.lastMessage,
         }));
         setUsers(data);
-        setLoading(false);
+        if (!silent) setLoading(false);
       })
       .catch(err => {
         setError(err.message);
         setUsers([]);
-        setLoading(false);
+        if (!silent) setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchConversations(false);
+    // Poll every 10s for new conversations
+    const interval = setInterval(() => fetchConversations(true), 10000);
+    return () => clearInterval(interval);
   }, [currentUserId]);
 
   // Pre-select initialSelectedUser if provided

@@ -174,7 +174,7 @@ public class EmailService : IEmailService
         await SendAsync(toEmail, toName, $"Cập nhật đơn đặt xe #{bookingId}", html);
     }
 
-    public async Task SendContractNotificationAsync(string toEmail, string toName, string contractCode, int bookingId, string carInfo, string role, string? contractTerms = null)
+    public async Task SendContractNotificationAsync(string toEmail, string toName, string contractCode, int bookingId, string carInfo, string role, string? contractTerms = null, string? nationalIdFront = null, string? nationalIdBack = null, string? licenseFront = null, string? licenseBack = null)
     {
         var roleLabel = role == "supplier" ? "Chủ xe (Bên A)" : "Khách hàng (Bên B)";
         var action = role == "supplier"
@@ -192,7 +192,7 @@ public class EmailService : IEmailService
         <tr>
           <td style=""padding:0 40px 24px"">
             <p style=""margin:0 0 12px;font-weight:700;color:#374151;font-size:13px"">📄 NỘI DUNG HỢP ĐỒNG</p>
-            <div style=""background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:20px;font-family:monospace;font-size:11px;color:#374151;white-space:pre-wrap;line-height:1.7;max-height:600px;overflow:auto"">{escaped}</div>
+            <div style=""background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:20px;font-family:monospace;font-size:11px;color:#374151;white-space:pre-wrap;line-height:1.7"">{escaped}</div>
           </td>
         </tr>";
         }
@@ -256,6 +256,7 @@ public class EmailService : IEmailService
           </td>
         </tr>
         {contractSection}
+        {BuildImageSection(nationalIdFront, nationalIdBack, licenseFront, licenseBack)}
         <!-- Footer -->
         <tr>
           <td style=""background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb"">
@@ -271,5 +272,31 @@ public class EmailService : IEmailService
 </html>";
 
         await SendAsync(toEmail, toName, $"📋 Hợp đồng thuê xe {contractCode} - Car Rental", html);
+    }
+
+    private static string BuildImageSection(string? nationalIdFront, string? nationalIdBack, string? licenseFront, string? licenseBack)
+    {
+        var imgs = new List<(string label, string url)>();
+        if (!string.IsNullOrEmpty(nationalIdFront)) imgs.Add(("CCCD mặt trước", nationalIdFront));
+        if (!string.IsNullOrEmpty(nationalIdBack)) imgs.Add(("CCCD mặt sau", nationalIdBack));
+        if (!string.IsNullOrEmpty(licenseFront)) imgs.Add(("Bằng lái mặt trước", licenseFront));
+        if (!string.IsNullOrEmpty(licenseBack)) imgs.Add(("Bằng lái mặt sau", licenseBack));
+        if (imgs.Count == 0) return "";
+
+        var cells = string.Join("", imgs.Select(i => $@"
+          <td style=""padding:8px;text-align:center;width:50%"">
+            <p style=""margin:0 0 6px;font-size:11px;color:#6b7280"">{i.label}</p>
+            <a href=""{i.url}"" target=""_blank"">
+              <img src=""{i.url}"" alt=""{i.label}"" style=""max-width:240px;width:100%;border-radius:8px;border:1px solid #e5e7eb"" />
+            </a>
+          </td>"));
+
+        return $@"
+        <tr>
+          <td style=""padding:0 40px 24px"">
+            <p style=""margin:0 0 12px;font-weight:700;color:#374151;font-size:13px"">📎 Ảnh giấy tờ tùy thân của người thuê</p>
+            <table width=""100%"" cellpadding=""0"" cellspacing=""0""><tr>{cells}</tr></table>
+          </td>
+        </tr>";
     }
 }

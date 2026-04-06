@@ -210,32 +210,36 @@ public class PaymentService : IPaymentService
         (await _context.SupplierRevenues.Where(r => r.SupplierId == supplierId).ToListAsync())
         .Select(MapRevenueToDto);
 
-    public async Task<IEnumerable<AdminPaymentDto>> GetAllAsync() =>
-        await _context.Payments
+    public async Task<IEnumerable<AdminPaymentDto>> GetAllAsync()
+    {
+        var statusMap = await _context.Statuses
+            .ToDictionaryAsync(s => s.StatusId, s => s.StatusName ?? "unknown");
+        var payments = await _context.Payments
             .Include(p => p.Booking).ThenInclude(b => b!.Customer)
             .Include(p => p.Booking).ThenInclude(b => b!.Car).ThenInclude(c => c!.Supplier)
-            .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new AdminPaymentDto
-            {
-                PaymentId = p.PaymentId,
-                BookingId = p.BookingId,
-                CustomerName = p.Booking!.Customer!.FullName ?? p.Booking.Customer.Email,
-                SupplierName = p.Booking.Car!.Supplier!.FullName ?? p.Booking.Car.Supplier.Email,
-                Amount = p.Amount,
-                PaymentMethod = p.PaymentMethod,
-                PaymentType = p.PaymentType,
-                PaymentStatus = p.PaymentStatus,
-                TransactionId = p.TransactionId,
-                PaymentDate = p.PaymentDate,
-                CreatedAt = p.CreatedAt
-            })
+            .OrderByDescending(p => p.PaymentDate)
             .ToListAsync();
+        return payments.Select(p => new AdminPaymentDto
+        {
+            PaymentId = p.PaymentId,
+            BookingId = p.BookingId,
+            CustomerName = p.Booking?.Customer?.FullName ?? p.Booking?.Customer?.Email ?? "—",
+            SupplierName = p.Booking?.Car?.Supplier?.FullName ?? p.Booking?.Car?.Supplier?.Email ?? "—",
+            Amount = p.Amount,
+            PaymentMethod = p.PaymentMethod,
+            PaymentType = p.PaymentType,
+            PaymentStatus = statusMap.TryGetValue(p.PaymentStatusId, out var sn) ? sn : "unknown",
+            TransactionId = p.TransactionId,
+            PaymentDate = p.PaymentDate,
+            CreatedAt = p.PaymentDate
+        });
+    }
 
     private static PaymentDto MapToDto(Payment p) => new()
     {
         PaymentId = p.PaymentId, BookingId = p.BookingId, Amount = p.Amount,
-        PaymentMethod = p.PaymentMethod, PaymentStatus = p.PaymentStatus,
-        TransactionId = p.TransactionId, PaymentDate = p.PaymentDate, CreatedAt = p.CreatedAt
+        PaymentMethod = p.PaymentMethod, PaymentStatus = "pending",
+        TransactionId = p.TransactionId, PaymentDate = p.PaymentDate, CreatedAt = p.PaymentDate
     };
 
     private static SupplierRevenueDto MapRevenueToDto(SupplierRevenue r) => new()

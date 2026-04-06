@@ -1,37 +1,41 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { io } from 'socket.io-client';
 import { useNavigate } from "react-router-dom";
-import { 
-  getSupplierOrders, 
-  supplierConfirmReturn, 
-  refundDeposit, 
-  supplierConfirmBooking, 
-  supplierRejectBooking, 
-  supplierConfirmFullPayment, 
-  getBookingDetails, 
-  supplierPrepareCar, 
+import {
+  getSupplierOrders,
+  supplierConfirmReturn,
+  refundDeposit,
+  supplierConfirmBooking,
+  supplierRejectBooking,
+  supplierConfirmFullPayment,
+  getBookingDetails,
+  supplierPrepareCar,
   supplierConfirmDelivery,
   getPendingCashPayments,
   confirmCashReceived,
   getPendingPlatformFees,
   getTotalPendingPlatformFees,
-  initiatePlatformFeePayment
+  initiatePlatformFeePayment,
+  getSupplierContracts,
+  getContractById
 } from "@/services/api";
 import { toast } from "react-toastify";
 import { 
-  FaClipboardList, 
-  FaCheck, 
-  FaTimes, 
-  FaEye, 
-  FaFilter, 
-  FaSyncAlt, 
-  FaCheckCircle, 
-  FaTimesCircle, 
-  FaFileExport, 
-  FaSearch, 
+  FaClipboardList,
+  FaCheck,
+  FaTimes,
+  FaEye,
+  FaFilter,
+  FaSyncAlt,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaFileExport,
+  FaSearch,
   FaMoneyCheckAlt,
   FaCar,
-  FaUser
+  FaUser,
+  FaFileContract,
+  FaArrowLeft
 } from "react-icons/fa";
 import Papa from 'papaparse';
 import LoadingSpinner from "@/components/ui/Loading/LoadingSpinner";
@@ -66,6 +70,11 @@ const SupplierOrderManagement = () => {
   const [showReportViewModal, setShowReportViewModal] = useState(false);
   const [selectedReportBooking, setSelectedReportBooking] = useState(null);
 
+  // Contract states
+  const [contractMap, setContractMap] = useState({}); // bookingId → contractId
+  const [viewingContract, setViewingContract] = useState(null);
+  const [contractLoading, setContractLoading] = useState(false);
+
   // Effects
   // WebSocket: cập nhật orders real-time
   const socketRef = useRef(null);
@@ -84,7 +93,28 @@ const SupplierOrderManagement = () => {
   useEffect(() => {
     fetchOrders();
     fetchCashPaymentData();
+    fetchContracts();
   }, []);
+
+  const fetchContracts = async () => {
+    try {
+      const res = await getSupplierContracts();
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      const map = {};
+      list.forEach(c => { if (c.bookingId) map[c.bookingId] = c.contractId; });
+      setContractMap(map);
+    } catch { /* ignore */ }
+  };
+
+  const handleViewContract = async (contractId) => {
+    try {
+      setContractLoading(true);
+      const res = await getContractById(contractId);
+      const contract = res?.contractId ? res : res?.data;
+      if (contract) setViewingContract(contract);
+    } catch { toast.error("Lỗi tải hợp đồng"); }
+    finally { setContractLoading(false); }
+  };
 
   // Sound notification for new cash payments
   useEffect(() => {
@@ -634,8 +664,8 @@ const SupplierOrderManagement = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div>
-                          <div className="font-bold text-lg text-blue-700">{order.car?.model || 'N/A'}</div>
-                          <div className="text-xs text-gray-400">{order.car?.licensePlate}</div>
+                          <div className="font-bold text-lg text-blue-700">{order.car?.model || order.carModel || 'N/A'}</div>
+                          <div className="text-xs text-gray-400">{order.licensePlate || order.car?.licensePlate}</div>
                         </div>
                       </td>
                       <td className="py-4 px-6">
@@ -644,8 +674,8 @@ const SupplierOrderManagement = () => {
                             <FaUser className="text-sm text-green-600" />
                           </div>
                           <div>
-                            <div className="font-medium text-gray-800">{order.customer?.userDetail?.fullName || order.customer?.name || order.customerName || 'N/A'}</div>
-                            <div className="text-sm text-gray-500">{order.customer?.email || 'N/A'}</div>
+                            <div className="font-medium text-gray-800">{order.customer?.name || order.customerName || order.customer?.email || 'N/A'}</div>
+                            <div className="text-sm text-gray-500">{order.customer?.email || ''}</div>
                           </div>
                         </div>
                       </td>
@@ -716,7 +746,7 @@ const SupplierOrderManagement = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex flex-wrap gap-2 justify-center items-center">
-                          <button 
+                          <button
                             className="flex items-center gap-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-semibold shadow hover:bg-blue-200 transition-all text-sm"
                             title="Xem chi tiết"
                             onClick={() => openModal(order)}
@@ -724,6 +754,16 @@ const SupplierOrderManagement = () => {
                             <FaEye className="w-4 h-4" />
                             <span>Chi tiết</span>
                           </button>
+                          {contractMap[order.bookingId] && (
+                            <button
+                              className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-semibold shadow hover:bg-indigo-200 transition-all text-sm"
+                              title="Xem hợp đồng"
+                              onClick={() => handleViewContract(contractMap[order.bookingId])}
+                            >
+                              <FaFileContract className="w-4 h-4" />
+                              <span>Hợp đồng</span>
+                            </button>
+                          )}
                           
                           {/* Xác nhận booking - Pending */}
                           {(order.status?.statusName || order.statusName)?.toLowerCase() === 'pending' && (
@@ -1139,10 +1179,60 @@ const SupplierOrderManagement = () => {
           }}
           bookingId={selectedReportBooking.bookingId}
           currentUser={user}
-          onConfirm={() => {
-            fetchOrders();
-          }}
+          onConfirm={() => { fetchOrders(); }}
         />
+      )}
+
+      {/* Contract View Modal */}
+      {viewingContract && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <FaFileContract className="text-indigo-600 text-xl" />
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">{viewingContract.contractCode}</h3>
+                  <p className="text-sm text-gray-500">Booking #{viewingContract.bookingId} • {viewingContract.customerName}</p>
+                </div>
+              </div>
+              <button onClick={() => setViewingContract(null)} className="p-2 rounded-lg hover:bg-gray-100 transition">
+                <FaTimes className="text-gray-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-gray-500 mb-1">Khách hàng</p>
+                  <p className="font-semibold">{viewingContract.customerName || '—'}</p>
+                  <p className="text-gray-500 text-xs">{viewingContract.customerPhone}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-gray-500 mb-1">Thời gian thuê</p>
+                  <p className="font-semibold">{viewingContract.startDate} → {viewingContract.endDate}</p>
+                </div>
+              </div>
+              <div className="flex gap-4 mb-4">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${viewingContract.signedByCustomer ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {viewingContract.signedByCustomer ? '✓ Khách đã ký' : '⏳ Khách chưa ký'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${viewingContract.signedBySupplier ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {viewingContract.signedBySupplier ? '✓ Bạn đã ký' : '⏳ Bạn chưa ký'}
+                </span>
+              </div>
+              <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-xl max-h-[400px] overflow-y-auto leading-relaxed">
+                {viewingContract.termsAndConditions || 'Chưa có điều khoản'}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+      {contractLoading && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 flex items-center gap-3">
+            <FaSyncAlt className="animate-spin text-indigo-500" />
+            <span>Đang tải hợp đồng...</span>
+          </div>
+        </div>
       )}
     </div>
   );

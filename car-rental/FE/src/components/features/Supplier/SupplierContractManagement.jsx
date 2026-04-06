@@ -142,8 +142,9 @@ const ContractDetail = ({ contractId, onBack }) => {
     try {
       setLoading(true);
       const res = await getContractById(contractId);
-      if (res.success) setContract(res.data);
-      else toast.error(res.message || "Lỗi tải hợp đồng");
+      const contract = res?.contractId ? res : res?.data;
+      if (contract) setContract(contract);
+      else toast.error("Lỗi tải hợp đồng");
     } catch (err) {
       toast.error("Lỗi tải hợp đồng");
     } finally {
@@ -157,13 +158,9 @@ const ContractDetail = ({ contractId, onBack }) => {
     try {
       setSigning(true);
       const res = await signContract(contractId, signatureBase64);
-      if (res.success) {
-        toast.success(res.message || "Ký hợp đồng thành công!");
-        setContract(res.data);
-        setShowSignModal(false);
-      } else {
-        toast.error(res.message || "Lỗi ký hợp đồng");
-      }
+      const updated = res?.contractId ? res : res?.data;
+      if (updated) { toast.success("Ký hợp đồng thành công!"); setContract(updated); setShowSignModal(false); }
+      else toast.error(res?.message || "Lỗi ký hợp đồng");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Lỗi ký hợp đồng");
     } finally { setSigning(false); }
@@ -172,8 +169,9 @@ const ContractDetail = ({ contractId, onBack }) => {
   const handleSaveTerms = async () => {
     try {
       const res = await updateContractTerms(contractId, editedTerms);
-      if (res.success) { toast.success("Cập nhật điều khoản thành công"); setContract(res.data); setEditingTerms(false); }
-      else toast.error(res.message);
+      const updated = res?.contractId ? res : res?.data;
+      if (updated) { toast.success("Cập nhật điều khoản thành công"); setContract(updated); setEditingTerms(false); }
+      else toast.error(res?.message || "Lỗi cập nhật");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Lỗi cập nhật");
     }
@@ -318,7 +316,7 @@ const ContractDetail = ({ contractId, onBack }) => {
 };
 
 // ── Generate Contract from Order ───────────────────────────────────────────
-const GenerateContractPanel = ({ onGenerated }) => {
+const GenerateContractPanel = ({ onGenerated, contracts, onView }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(null);
@@ -327,8 +325,7 @@ const GenerateContractPanel = ({ onGenerated }) => {
     (async () => {
       try {
         const res = await getSupplierOrders();
-        // Only show confirmed bookings without contracts
-        const confirmed = (res.data || res || []).filter(o => {
+        const confirmed = (Array.isArray(res) ? res : (res.data || res || [])).filter(o => {
           const statusName = (o.status?.statusName || o.statusName || "").toLowerCase();
           return statusName === "confirmed" || statusName === "approved";
         });
@@ -343,11 +340,11 @@ const GenerateContractPanel = ({ onGenerated }) => {
     try {
       setGenerating(bookingId);
       const res = await generateContract(bookingId);
-      if (res.success) {
-        toast.success(res.message || "Tạo hợp đồng thành công!");
-        setOrders(prev => prev.filter(o => (o.bookingId || o.id) !== bookingId));
+      const created = res?.contractId ? res : res?.data;
+      if (created) {
+        toast.success("Tạo hợp đồng thành công!");
         if (onGenerated) onGenerated();
-      } else toast.error(res.message || "Lỗi tạo hợp đồng");
+      } else toast.error(res?.message || "Lỗi tạo hợp đồng");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Lỗi tạo hợp đồng");
     } finally { setGenerating(null); }
@@ -355,34 +352,40 @@ const GenerateContractPanel = ({ onGenerated }) => {
 
   if (loading) return <div className="flex justify-center py-10"><FaSync className="animate-spin text-2xl text-indigo-500" /></div>;
 
+  if (orders.length === 0) return null;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
       <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-4">
-        <FaFileContract className="text-indigo-600" /> Tạo hợp đồng cho đơn đã duyệt
+        <FaFileContract className="text-indigo-600" /> Đơn đặt xe đã duyệt
       </h3>
-      {orders.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-6">Không có đơn hàng nào sẵn sàng tạo hợp đồng</p>
-      ) : (
-        <div className="space-y-3">
-          {orders.map(o => {
-            const id = o.bookingId || o.id;
-            return (
-              <div key={id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <span className="font-medium text-gray-800">Booking #{id}</span>
-                  <span className="text-sm text-gray-500 ml-3">
-                    {o.carName || o.car?.model || ""} • {o.customerName || o.customer?.fullName || ""}
-                  </span>
-                </div>
+      <div className="space-y-3">
+        {orders.map(o => {
+          const id = o.bookingId || o.id;
+          const existing = (contracts || []).find(c => c.bookingId === id);
+          return (
+            <div key={id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <span className="font-medium text-gray-800">Booking #{id}</span>
+                <span className="text-sm text-gray-500 ml-3">
+                  {o.carModel || o.car?.model || ""} • {o.customerName || o.customer?.fullName || ""}
+                </span>
+              </div>
+              {existing ? (
+                <button onClick={() => onView && onView(existing.contractId)}
+                  className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition flex items-center gap-1">
+                  <FaEye /> Xem hợp đồng
+                </button>
+              ) : (
                 <button onClick={() => handleGenerate(id)} disabled={generating === id}
                   className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition flex items-center gap-1">
                   <FaFileContract /> {generating === id ? "Đang tạo..." : "Tạo hợp đồng"}
                 </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -397,7 +400,8 @@ const SupplierContractManagement = () => {
     try {
       setLoading(true);
       const res = await getSupplierContracts();
-      if (res.success) setContracts(res.data || []);
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setContracts(list);
     } catch (err) {
       toast.error("Lỗi tải danh sách hợp đồng");
     } finally { setLoading(false); }
@@ -415,7 +419,7 @@ const SupplierContractManagement = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-xl p-8">
-      <GenerateContractPanel onGenerated={loadContracts} />
+      <GenerateContractPanel onGenerated={loadContracts} contracts={contracts} onView={setViewContractId} />
       <ContractList contracts={contracts} loading={loading} onView={setViewContractId} onRefresh={loadContracts} />
     </motion.div>
   );

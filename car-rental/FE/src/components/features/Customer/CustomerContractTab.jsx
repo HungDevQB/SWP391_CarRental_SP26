@@ -327,7 +327,9 @@ const CustomerContractTab = () => {
     try {
       setLoading(true);
       const res = await getCustomerContracts();
-      if (res.success) setContracts(res.data || []);
+      // interceptor already unwraps ApiResponse<T>.data
+      const list = Array.isArray(res) ? res : (res?.data || res || []);
+      setContracts(list);
     } catch (err) {
       toast.error("Lỗi tải danh sách hợp đồng");
     } finally { setLoading(false); }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { getCarById, post, getProfile, getContractByBookingId, signContract, ensureContract } from "@/services/api"
+import api from "@/services/api"
 import {
   FaCarSide,
   FaUser,
@@ -580,6 +581,12 @@ const BookingConfirmationPage = () => {
     email: "",
     pickupAddress: "",
     dropoffAddress: "",
+    nationalId: "",
+    nationalIdFrontImage: "",
+    nationalIdBackImage: "",
+    drivingLicense: "",
+    drivingLicenseFrontImage: "",
+    drivingLicenseBackImage: "",
   })
   const [contactErrors, setContactErrors] = useState({})
   const [withDriver, setWithDriver] = useState(false)
@@ -671,7 +678,10 @@ const BookingConfirmationPage = () => {
     // Load user profile data
     const loadUserProfile = async () => {
       try {
-        const userProfile = await getProfile()
+        const [userProfile, detailRes] = await Promise.all([
+          getProfile(),
+          api.get('/api/users/me/detail').then(r => r.data?.data ?? r.data).catch(() => null)
+        ])
         if (userProfile) {
           setContactInfo((prev) => ({
             ...prev,
@@ -680,6 +690,12 @@ const BookingConfirmationPage = () => {
             email: userProfile.email || "",
             pickupAddress: prev.pickupAddress || userProfile.address || userProfile.userDetail?.address || "",
             dropoffAddress: prev.dropoffAddress || userProfile.address || userProfile.userDetail?.address || "",
+            nationalId: detailRes?.nationalId || "",
+            nationalIdFrontImage: detailRes?.nationalIdFrontImage || "",
+            nationalIdBackImage: detailRes?.nationalIdBackImage || "",
+            drivingLicense: detailRes?.drivingLicense || "",
+            drivingLicenseFrontImage: detailRes?.drivingLicenseFrontImage || "",
+            drivingLicenseBackImage: detailRes?.drivingLicenseBackImage || "",
           }))
         }
       } catch (error) {
@@ -885,6 +901,8 @@ const BookingConfirmationPage = () => {
     const customerName = contactInfo.fullName || "................................"
     const customerPhone = contactInfo.phone || "................................"
     const customerEmail = contactInfo.email || "................................"
+    const customerNationalId = contactInfo.nationalId || "................................"
+    const customerDrivingLicense = contactInfo.drivingLicense || "................................"
     const pickupAddr = contactInfo.pickupAddress || "Theo thỏa thuận"
     const dropoffAddr = contactInfo.dropoffAddress || "Theo thỏa thuận"
 
@@ -924,6 +942,8 @@ Số điện thoại   : ${supplierPhone}
 BÊN THUÊ (BÊN B):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Họ và tên       : ${customerName}
+CCCD/CMND số    : ${customerNationalId}
+Giấy phép lái xe: ${customerDrivingLicense}
 Số điện thoại   : ${customerPhone}
 Email           : ${customerEmail}
 
@@ -1399,7 +1419,7 @@ và thanh toán đầy đủ các chi phí phát sinh (nếu có).
             </div>
 
             {/* Contract Terms — scrollable */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
                 {(contract?.termsAndConditions || "").split("\n").map((line, i) => {
                   const isSectionDivider = line.startsWith("━") || line.startsWith("─")
@@ -1414,6 +1434,56 @@ và thanh toán đầy đủ các chi phí phát sinh (nếu có).
                   return <p key={i} className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{line}</p>
                 })}
               </div>
+
+              {/* CCCD & License images */}
+              {(contactInfo.nationalIdFrontImage || contactInfo.nationalIdBackImage || contactInfo.drivingLicenseFrontImage || contactInfo.drivingLicenseBackImage) && (
+                <div className="border border-blue-100 rounded-2xl p-4 bg-blue-50">
+                  <p className="text-sm font-bold text-blue-800 mb-3">📎 Ảnh giấy tờ tùy thân đính kèm</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {contactInfo.nationalIdFrontImage && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">CCCD mặt trước</p>
+                        <a href={contactInfo.nationalIdFrontImage} target="_blank" rel="noopener noreferrer">
+                          <img src={contactInfo.nationalIdFrontImage} alt="CCCD mặt trước" className="w-full rounded-lg border border-gray-200 hover:opacity-80 transition-opacity cursor-zoom-in" style={{maxHeight: 120, objectFit: 'cover'}} />
+                        </a>
+                      </div>
+                    )}
+                    {contactInfo.nationalIdBackImage && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">CCCD mặt sau</p>
+                        <a href={contactInfo.nationalIdBackImage} target="_blank" rel="noopener noreferrer">
+                          <img src={contactInfo.nationalIdBackImage} alt="CCCD mặt sau" className="w-full rounded-lg border border-gray-200 hover:opacity-80 transition-opacity cursor-zoom-in" style={{maxHeight: 120, objectFit: 'cover'}} />
+                        </a>
+                      </div>
+                    )}
+                    {contactInfo.drivingLicenseFrontImage && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Bằng lái mặt trước</p>
+                        <a href={contactInfo.drivingLicenseFrontImage} target="_blank" rel="noopener noreferrer">
+                          <img src={contactInfo.drivingLicenseFrontImage} alt="Bằng lái mặt trước" className="w-full rounded-lg border border-gray-200 hover:opacity-80 transition-opacity cursor-zoom-in" style={{maxHeight: 120, objectFit: 'cover'}} />
+                        </a>
+                      </div>
+                    )}
+                    {contactInfo.drivingLicenseBackImage && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Bằng lái mặt sau</p>
+                        <a href={contactInfo.drivingLicenseBackImage} target="_blank" rel="noopener noreferrer">
+                          <img src={contactInfo.drivingLicenseBackImage} alt="Bằng lái mặt sau" className="w-full rounded-lg border border-gray-200 hover:opacity-80 transition-opacity cursor-zoom-in" style={{maxHeight: 120, objectFit: 'cover'}} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  {!contactInfo.nationalIdFrontImage && !contactInfo.drivingLicenseFrontImage && (
+                    <p className="text-xs text-amber-600 mt-2">⚠️ Chưa có ảnh CCCD và bằng lái. Vui lòng cập nhật trong trang hồ sơ.</p>
+                  )}
+                </div>
+              )}
+              {!contactInfo.nationalIdFrontImage && !contactInfo.nationalIdBackImage && !contactInfo.drivingLicenseFrontImage && !contactInfo.drivingLicenseBackImage && (
+                <div className="border border-amber-200 rounded-2xl p-4 bg-amber-50">
+                  <p className="text-sm font-semibold text-amber-800">⚠️ Chưa có ảnh giấy tờ tùy thân</p>
+                  <p className="text-xs text-amber-700 mt-1">Vui lòng vào <strong>Hồ sơ</strong> để upload ảnh CCCD và bằng lái xe. Chủ xe cần xem ảnh này trước khi ký hợp đồng.</p>
+                </div>
+              )}
             </div>
 
             {/* Footer */}

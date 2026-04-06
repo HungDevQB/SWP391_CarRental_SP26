@@ -320,6 +320,8 @@ public class BookingService : IBookingService
         CarBrand = b.Car?.CarBrand?.BrandName,
         CarThumbnail = b.Car?.Images.FirstOrDefault()?.ImageUrl,
         CustomerName = b.Customer?.FullName ?? b.Customer?.Username ?? b.Customer?.Email,
+        CustomerEmail = b.Customer?.Email,
+        LicensePlate = b.Car?.LicensePlate,
         StartDate = b.StartDate,
         EndDate = b.EndDate,
         TotalPrice = b.BookingFinancial?.TotalFare ?? 0,

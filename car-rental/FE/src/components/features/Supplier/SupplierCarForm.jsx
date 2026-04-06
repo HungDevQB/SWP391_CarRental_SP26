@@ -315,19 +315,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Năm sản xuất <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
+                  <select
                     name="year"
                     value={form.year}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                      errors.year ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    min="1900"
-                    max={new Date().getFullYear()}
-                    placeholder="Ví dụ: 2020"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.year ? 'border-red-500' : 'border-gray-300'}`}
                     required
-                  />
+                  >
+                    <option value="">-- Chọn năm --</option>
+                    {Array.from({ length: new Date().getFullYear() - 1999 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
                   {errors.year && <p className="text-red-500 text-sm mt-1">{errors.year}</p>}
                 </div>
 
@@ -335,17 +334,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Màu xe <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="color"
                     value={form.color}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                      errors.color ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Ví dụ: Trắng, Đen, Xanh..."
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.color ? 'border-red-500' : 'border-gray-300'}`}
                     required
-                  />
+                  >
+                    <option value="">-- Chọn màu xe --</option>
+                    {['Trắng','Đen','Bạc','Xám','Đỏ','Xanh dương','Xanh lá','Vàng','Nâu','Cam','Tím','Hồng','Vàng đồng','Be'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                   {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
                 </div>
 
@@ -369,16 +369,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Số chỗ ngồi <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
+                  <select
                     name="numOfSeats"
                     value={form.numOfSeats}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.numOfSeats ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Ví dụ: 4, 5, 7..."
-                    min="1"
                     required
-                  />
+                  >
+                    <option value="">-- Chọn số chỗ --</option>
+                    {[2, 4, 5, 6, 7, 8, 9, 10, 12, 16].map(s => (
+                      <option key={s} value={s}>{s} chỗ</option>
+                    ))}
+                  </select>
                   {errors.numOfSeats && <p className="text-red-500 text-sm mt-1">{errors.numOfSeats}</p>}
                 </div>
               </div>
@@ -417,15 +419,18 @@ const SupplierCarForm = ({ onSuccess, initialData = {}, onSubmit, isEdit }) => {
                   <label className="block mb-2 font-semibold text-gray-700">
                     Hộp số <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="transmission"
                     value={form.transmission}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.transmission ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Ví dụ: Số tự động, Số sàn..."
                     required
-                  />
+                  >
+                    <option value="">-- Chọn hộp số --</option>
+                    <option value="Số tự động">Số tự động</option>
+                    <option value="Số sàn">Số sàn</option>
+                    <option value="Bán tự động">Bán tự động</option>
+                  </select>
                   {errors.transmission && <p className="text-red-500 text-sm mt-1">{errors.transmission}</p>}
                 </div>
 

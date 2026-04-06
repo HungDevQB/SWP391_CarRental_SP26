@@ -750,10 +750,14 @@ const BookingSuccessPage = () => {
     <>
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #invoice-content, #invoice-content * { visibility: visible; }
-          #invoice-content { position: absolute; top: 0; left: 0; width: 100%; }
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { background: white !important; }
+          body > * { display: none !important; }
+          #invoice-print-wrapper { display: block !important; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background: white; }
           .no-print { display: none !important; }
+        }
+        @media screen {
+          #invoice-print-wrapper { display: none; }
         }
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
@@ -1365,6 +1369,60 @@ const BookingSuccessPage = () => {
             <div className="absolute bottom-1/4 left-2/3 w-1.5 h-1.5 bg-pink-400 rounded-full opacity-25 animate-bounce"></div>
           </div>
         </footer>
+      </div>
+
+      {/* Print-only invoice */}
+      <div id="invoice-print-wrapper" style={{fontFamily:'sans-serif',padding:32,background:'white',color:'#111'}}>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <h1 style={{fontSize:22,fontWeight:700,margin:0}}>🚗 HÓA ĐƠN THUÊ XE</h1>
+          <p style={{color:'#6b7280',margin:'4px 0 0'}}>Car Rental · {new Date().toLocaleDateString('vi-VN')}</p>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse',marginBottom:20}}>
+          <thead>
+            <tr style={{background:'#2563eb',color:'white'}}>
+              <th colSpan={2} style={{padding:'10px 16px',textAlign:'left',fontSize:14}}>THÔNG TIN ĐẶT XE #{bookingData?.bookingId}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['Xe',''.concat(carInfo.model||carInfo.carModel||carInfo.name||'', carInfo.licensePlate ? ` (${carInfo.licensePlate})` : '')],
+              ['Hãng xe', carInfo.brandName||carInfo.brand?.brandName||''],
+              ['Ngày nhận', bookingData?.pickupDateTime ? new Date(bookingData.pickupDateTime).toLocaleString('vi-VN') : ''],
+              ['Ngày trả', bookingData?.dropoffDateTime ? new Date(bookingData.dropoffDateTime).toLocaleString('vi-VN') : ''],
+              ['Địa điểm nhận', bookingData?.pickupLocation||''],
+              ['Địa điểm trả', bookingData?.dropoffLocation||''],
+              ['Tổng tiền', `${(priceBreakdown?.total||0).toLocaleString('vi-VN')} VNĐ`],
+              ['Trạng thái', 'Đã thanh toán'],
+            ].map(([k,v]) => v ? (
+              <tr key={k} style={{borderBottom:'1px solid #e5e7eb'}}>
+                <td style={{padding:'8px 16px',color:'#6b7280',width:'35%',fontSize:13}}>{k}</td>
+                <td style={{padding:'8px 16px',fontWeight:600,fontSize:13}}>{v}</td>
+              </tr>
+            ) : null)}
+          </tbody>
+        </table>
+        <table style={{width:'100%',borderCollapse:'collapse',marginBottom:20}}>
+          <thead>
+            <tr style={{background:'#7c3aed',color:'white'}}>
+              <th colSpan={2} style={{padding:'10px 16px',textAlign:'left',fontSize:14}}>THÔNG TIN KHÁCH HÀNG</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['Họ và tên', bookingData?.customerInfo?.fullName||''],
+              ['Số điện thoại', bookingData?.customerInfo?.phone||''],
+              ['Email', bookingData?.customerInfo?.email||''],
+            ].map(([k,v]) => v ? (
+              <tr key={k} style={{borderBottom:'1px solid #e5e7eb'}}>
+                <td style={{padding:'8px 16px',color:'#6b7280',width:'35%',fontSize:13}}>{k}</td>
+                <td style={{padding:'8px 16px',fontWeight:600,fontSize:13}}>{v}</td>
+              </tr>
+            ) : null)}
+          </tbody>
+        </table>
+        <p style={{textAlign:'center',color:'#9ca3af',fontSize:12,marginTop:32}}>
+          Cảm ơn bạn đã sử dụng dịch vụ Car Rental · Hóa đơn được in lúc {new Date().toLocaleString('vi-VN')}
+        </p>
       </div>
     </>
   )

@@ -213,9 +213,16 @@ public class ContractService : IContractService
         try
         {
             if (!string.IsNullOrEmpty(supplier?.Email))
+            {
+                var customerDetail = booking.Customer?.UserDetail;
                 await _email.SendContractNotificationAsync(
                     supplier.Email, supplier.FullName ?? supplier.Email,
-                    contractCode, bookingId, carInfo, "supplier", terms);
+                    contractCode, bookingId, carInfo, "supplier", terms,
+                    customerDetail?.NationalIdFrontImage,
+                    customerDetail?.NationalIdBackImage,
+                    customerDetail?.DrivingLicenseFrontImage,
+                    customerDetail?.DrivingLicenseBackImage);
+            }
             else
                 _logger.LogWarning("Supplier {SupplierId} has no email, skipping contract email", supplierId);
         }

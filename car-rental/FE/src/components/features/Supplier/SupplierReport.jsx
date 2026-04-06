@@ -150,14 +150,14 @@ const SupplierReport = () => {
             if (!order.createdAt) return false;
             const d = new Date(order.createdAt);
             return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          }).map(order => order.customer?.customerId || order.customerId).filter(Boolean)
+          }).map(order => order.customerId || order.customer?.userId).filter(Boolean)
         );
         const customerIdsLastMonth = new Set(
           (ordersData || []).filter(order => {
             if (!order.createdAt) return false;
             const d = new Date(order.createdAt);
             return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
-          }).map(order => order.customer?.customerId || order.customerId).filter(Boolean)
+          }).map(order => order.customerId || order.customer?.userId).filter(Boolean)
         );
         setCustomersLastMonth(customerIdsLastMonth.size);
 
@@ -188,7 +188,7 @@ const SupplierReport = () => {
 
         // Calculate customer stats: đếm số khách hàng duy nhất đã đặt xe
         const customerIds = new Set(
-          (ordersData || []).map(order => order.customer?.userId || order.userId).filter(Boolean)
+          (ordersData || []).map(order => order.customerId || order.customer?.userId || order.customer?.id).filter(Boolean)
         );
         setCustomerStats({
           totalCustomers: customerIds.size,
